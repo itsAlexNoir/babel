@@ -1,0 +1,179 @@
+import os
+from glob import glob
+import numpy as np
+import pandas as pd
+import argparse
+import streamlit as st
+from datetime import datetime
+from rich.console import Console
+console = Console()
+
+
+def get_flags():
+    parser = argparse.ArgumentParser(description='Babel UI.')
+    parser.add_argument('--db_path', type=str, help='Path to the database')
+    return parser.parse_args()
+
+
+class Library(object):
+    def __init__(self, db_path):
+        self.db_folder = db_path
+        self.db_filepath = os.path.join(self.db_folder, 'babel_db.csv')
+        self.backup_folder = os.path.join(self.db_folder, 'backups')
+        self.db = self.read_database()
+
+    def get_db(self):
+        return self.db
+
+    def read_database(self):
+        db = pd.read_csv(self.db_filepath)
+        db = db.fillna('')
+        db['año publicacion'] = db['año publicacion'].apply(lambda x:str(x).split('.')[0])
+        db['año edicion'] = db['año edicion'].apply(lambda x:str(x).split('.')[0])
+        return db
+
+    def create_backup(self):
+        current_date = datetime.now().strftime('%d.%m.%Y_%H.%M.%S')
+        console.log('Saving backup at ' + datetime.now().strftime('%d-%m-%Y %H:%M:%S'))
+        self.db.to_csv(os.path.join(self.backup_folder, 'babel_db__' + current_date + '.csv'), index=False)
+
+    def clear_backups(self):
+        backs = glob(os.path.join(self.db_filepath, 'babel_db_*'))
+        dates = {datetime.strptime(x.split('__')[1].split('.cs')[0], '%d.%m.%Y_%H.%M.%S'): x for x in backs}
+        last_date = sorted(list(dates.keys()))[-1]
+        for date in dates.keys():
+            if date != last_date:
+                os.remove(dates[date])
+
+    def add_item_to_library(self, new_entry):
+        self.db = pd.concat([self.db, new_entry], ignore_index=True)
+
+    def search_by(self, key, str_search):
+        return self.db[self.db[key].str.lower().str.contains(str_search.lower())]
+
+    def add_entry(self):
+        st.header('Añadir una entrada en la biblioteca')
+        new_title = st.text_input('Título', '')
+        new_original_title = st.text_input('Título original', '')
+        new_author = st.text_input('Autor/a', '')
+        new_editorial = st.text_input('Editorial', '')
+        new_traductor = st.text_input('Traductor/a', '')
+        new_publication_year = st.text_input('Año de publicación', '')
+        new_edition_year = st.text_input('Año de edición', '')
+        new_language    = st.text_input('Idioma', '')
+        new_tags        = st.text_input('Etiquetas (separadas por punto y coma)', '')
+
+        new_entry_str = f"### Nueva entrada:  \n" +\
+                        f"- ** Título**: {new_title} \n" +\
+                        f"- **Autor/a**: {new_author} \n" +\
+                        f"- **Título original**: {new_original_title} \n" +\
+                        f"- **Traductor/a**: {new_traductor} \n" +\
+                        f"- **Editorial**: {new_editorial} \n" +\
+                        f"- **Año de publicación**: {new_publication_year} \n"+\
+                        f"- **Año de edición**: {new_edition_year} \n"+\
+                        f"- **Idioma**: {new_language} \n"+\
+                        f"- **Etiquetas**: {new_tags}"
+
+        st.markdown(new_entry_str)
+        new_entry_dict = [{'autor/a': new_author, 'título': new_title, 'título original': new_original_title, 
+                    'traductor/a': new_traductor, 'editorial': new_editorial, 
+                    'año publicacion': new_publication_year, 'año edicion': new_edition_year}]
+        new_entry = pd.DataFrame.from_dict(new_entry_dict)
+        # Press to add a new entry
+        if st.button('Añadir entrada'):
+            self.add_item_to_library(new_entry)
+            self.save_db()
+            st.write('Entrada añadida')
+
+    def edit_entries(self, db_to_edit):
+        st.header('Editar una entrada en la biblioteca')
+        edit_title = st.text_input('Título (edit)', db_to_edit['título'])
+        edit_original_title = st.text_input('Título original (edit)', db_to_edit['título original'])
+        edit_author = st.text_input('Autor/a (edit)', db_to_edit['autor/a'])
+        edit_editorial = st.text_input('Editorial (edit)', db_to_edit['editorial'])
+        edit_traductor = st.text_input('Traductor/a (edit)', db_to_edit['traductor/a'])
+        edit_publication_year = st.text_input('Año de publicación (edit)', db_to_edit['año publicacion'])
+        edit_edition_year = st.text_input('Año de edición (edit)', db_to_edit['año edicion'])
+        edit_language    = st.text_input('Idioma (edit)', db_to_edit['idioma'])
+        edit_tags        = st.text_input('Etiquetas (separadas por punto y coma) (edit)', db_to_edit['etiquetas'])
+
+        edit_entry_str = f"### Editar entrada:  \n" +\
+                        f"- ** Título**: {edit_title} \n" +\
+                        f"- **Autor/a**: {edit_author} \n" +\
+                        f"- **Título original**: {edit_original_title} \n" +\
+                        f"- **Traductor/a**: {edit_traductor} \n" +\
+                        f"- **Editorial**: {edit_editorial} \n" +\
+                        f"- **Año de publicación**: {edit_publication_year} \n"+\
+                        f"- **Año de edición**: {edit_edition_year} \n"+\
+                        f"- **Idioma**: {edit_language} \n"+\
+                        f"- **Etiquetas**: {edit_tags}"
+        st.markdown(edit_entry_str)
+        edit_entry_dict = [{'autor/a': edit_author, 'título': edit_title, 'título original': edit_original_title, 
+                        'traductor/a': edit_traductor, 'editorial': edit_editorial, 
+                        'año publicacion': edit_publication_year, 'año edicion': edit_edition_year}]
+        edit_entry = pd.DataFrame.from_dict(edit_entry_dict)
+        if st.button('¿Editar la entrada?'):
+            for col in self.db.columns:
+                self.db.loc[db_to_edit.name][col] = edit_entry[col].iloc[0]
+            self.save_db()
+            st.write('Entrada editada')
+
+    def remove_entries(self, db_to_drop):
+        self.db.drop(db_to_drop.index, inplace=True)
+        self.save_db()
+        st.write('Entrada borrada')
+
+    def save_db(self):
+        self.db.to_csv(self.db_filepath, index=False)
+
+
+def main(args):
+    console.log('Starting app')
+    if args.db_path is None:
+        raise FileNotFoundError('Please provide a valid database path.')
+    
+    babel = Library(args.db_path)
+    
+    babel.create_backup()
+
+    db = babel.get_db()
+    st.title('Babel!')
+    st.header('Consultar la libreria')
+    st.text('Puedes explorar el dataframe de la biblioteca')
+    st.write(db)
+    st.header('Buscar una entrada en la biblioteca')
+    
+    search_key = st.selectbox('Campo', db.columns.tolist())
+    str_search = st.text_input('Búsqueda', '')
+    partial_db = babel.search_by(search_key, str_search)
+    
+    if str_search != '':
+        table_on = st.checkbox('See as a table')
+        if table_on:
+            st.table(partial_db)
+        else:
+            st.dataframe(partial_db)
+    
+    acciones = ['Añadir entrada', 'Editar entrada', 'Borrar entrada']
+    accion = st.sidebar.selectbox('Selecciona una acción', acciones)
+    if accion=='Añadir entrada':
+        babel.add_entry()
+    elif accion=='Editar entrada':
+        selected = st.selectbox('Seleccionar la entrada a editar', partial_db.index.tolist())
+        babel.edit_entries(partial_db.loc[selected])
+    #remove = st.button('Remove entries?')
+    elif accion=='Borrar entrada':
+        selected = st.multiselect('Seleccionar las entradas a borrar', partial_db.index.tolist())
+        if st.button('¿Borrar la(s) entradas seleccionada(s)?'):
+            babel.remove_entries(partial_db.loc[selected])
+        
+    if st.sidebar.button('Clear backups'):
+        babel.clear_backups()
+    if st.sidebar.button('Save library'):
+        babel.save_db()
+    if st.sidebar.button('Reload library'):
+        babel.read_database()
+
+if __name__ == '__main__':
+    args = get_flags()
+    main(args)
