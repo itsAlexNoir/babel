@@ -2,4 +2,4 @@
 source ~/.zshrc
 conda activate babel
 DIRNAME=`dirname "$0"`
-streamlit run ${DIRNAME}/../src/babel_viz.py
+streamlit run ${DIRNAME}/../src/babel_viz.py -- --db_path ${DIRNAME}/../databases

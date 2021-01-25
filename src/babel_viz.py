@@ -8,28 +8,25 @@ from datetime import datetime
 from rich.console import Console
 console = Console()
 
-class Library(object):
-    def __init__(self, db_file):
-        self.db_file = db_file
-        self.filename = os.path.basename(db_file.name.split('.')[0])
-        self.db_folder = '../databases'
-        self.db_filepath = os.path.join(self.db_folder, self.filename + '.csv')
-        if not os.path.exists(self.db_folder):
-            os.makedirs(self.db_folder)
-        self.backup_folder = os.path.join(self.db_folder, 'backups')
-        if not os.path.exists(self.backup_folder):
-            os.makedirs(self.backup_folder)
-        self.db = self.read_database()
-        self.db_slot = st.empty()
 
-    def show_db(self):
-        self.db_slot.write(self.db)
+def get_flags():
+    parser = argparse.ArgumentParser(description='Babel UI.')
+    parser.add_argument('--db_path', type=str, help='Path to the database')
+    return parser.parse_args()
+
+
+class Library(object):
+    def __init__(self, db_path):
+        self.db_folder = db_path
+        self.db_filepath = os.path.join(self.db_folder, 'babel_db.csv')
+        self.backup_folder = os.path.join(self.db_folder, 'backups')
+        self.db = self.read_database()
 
     def get_db(self):
         return self.db
 
     def read_database(self):
-        db = pd.read_csv(self.db_file)
+        db = pd.read_csv(self.db_filepath)
         db = db.fillna('')
         db['año publicacion'] = db['año publicacion'].apply(lambda x:str(x).split('.')[0])
         db['año edicion'] = db['año edicion'].apply(lambda x:str(x).split('.')[0])
@@ -38,10 +35,10 @@ class Library(object):
     def create_backup(self):
         current_date = datetime.now().strftime('%d.%m.%Y_%H.%M.%S')
         console.log('Saving backup at ' + datetime.now().strftime('%d-%m-%Y %H:%M:%S'))
-        self.db.to_csv(os.path.join(self.backup_folder, self.filename + '__' + current_date + '.csv'), index=False)
+        self.db.to_csv(os.path.join(self.backup_folder, 'babel_db__' + current_date + '.csv'), index=False)
 
     def clear_backups(self):
-        backs = glob(os.path.join(self.backup_folder, self.filename + '__*'))
+        backs = glob(os.path.join(self.db_filepath, 'babel_db_*'))
         dates = {datetime.strptime(x.split('__')[1].split('.cs')[0], '%d.%m.%Y_%H.%M.%S'): x for x in backs}
         last_date = sorted(list(dates.keys()))[-1]
         for date in dates.keys():
@@ -51,9 +48,6 @@ class Library(object):
     def add_item_to_library(self, new_entry):
         self.db = pd.concat([self.db, new_entry], ignore_index=True)
 
-    def get_db_fields(self):
-        return self.db.columns.tolist()
-    
     def search_by(self, key, str_search):
         return self.db[self.db[key].str.lower().str.contains(str_search.lower())]
 
@@ -83,15 +77,12 @@ class Library(object):
         st.markdown(new_entry_str)
         new_entry_dict = [{'autor/a': new_author, 'título': new_title, 'título original': new_original_title, 
                     'traductor/a': new_traductor, 'editorial': new_editorial, 
-                    'año publicacion': new_publication_year, 'año edicion': new_edition_year,
-                    'idioma': new_language, 'etiquetas': new_tags}]
+                    'año publicacion': new_publication_year, 'año edicion': new_edition_year}]
         new_entry = pd.DataFrame.from_dict(new_entry_dict)
         # Press to add a new entry
         if st.button('Añadir entrada'):
             self.add_item_to_library(new_entry)
             self.save_db()
-            self.create_backup()
-            self.show_db()
             st.write('Entrada añadida')
 
     def edit_entries(self, db_to_edit):
@@ -119,75 +110,70 @@ class Library(object):
         st.markdown(edit_entry_str)
         edit_entry_dict = [{'autor/a': edit_author, 'título': edit_title, 'título original': edit_original_title, 
                         'traductor/a': edit_traductor, 'editorial': edit_editorial, 
-                        'año publicacion': edit_publication_year, 'año edicion': edit_edition_year,
-                        'idioma': edit_language, 'etiquetas': edit_tags}]
+                        'año publicacion': edit_publication_year, 'año edicion': edit_edition_year}]
         edit_entry = pd.DataFrame.from_dict(edit_entry_dict)
         if st.button('¿Editar la entrada?'):
             for col in self.db.columns:
                 self.db.loc[db_to_edit.name][col] = edit_entry[col].iloc[0]
             self.save_db()
-            self.create_backup()
-            self.show_db()
             st.write('Entrada editada')
 
     def remove_entries(self, db_to_drop):
         self.db.drop(db_to_drop.index, inplace=True)
         self.save_db()
-        self.create_backup()
-        self.show_db()
         st.write('Entrada borrada')
 
     def save_db(self):
         self.db.to_csv(self.db_filepath, index=False)
 
 
-def main():
+def main(args):
     console.log('Starting app')
+    if args.db_path is None:
+        raise FileNotFoundError('Please provide a valid database path.')
+    
+    babel = Library(args.db_path)
+    
+    babel.create_backup()
 
-    db_path = st.file_uploader('Por favor, selecciona la base de datos.', type=['csv'], key='db_path')
-    if db_path is not None:
-
-        st.title('Babel!')
-        st.header('Consultar la libreria')
-        st.text('Puedes explorar el dataframe de la biblioteca')
-
-        babel = Library(db_path)
-        babel.create_backup()
-
-        #db = babel.get_db()
-        babel.show_db()
-
-        if st.sidebar.button('Clear backups'):
-            babel.clear_backups()
-        #if st.sidebar.button('Save library'):
-            #babel.save_db()
-        if st.sidebar.button('Reload library'):
-            babel.read_database()
-
-        st.header('Buscar una entrada en la biblioteca')
+    db = babel.get_db()
+    st.title('Babel!')
+    st.header('Consultar la libreria')
+    st.text('Puedes explorar el dataframe de la biblioteca')
+    st.write(db)
+    st.header('Buscar una entrada en la biblioteca')
+    
+    search_key = st.selectbox('Campo', db.columns.tolist())
+    str_search = st.text_input('Búsqueda', '')
+    partial_db = babel.search_by(search_key, str_search)
+    
+    if str_search != '':
+        table_on = st.checkbox('See as a table')
+        if table_on:
+            st.table(partial_db)
+        else:
+            st.dataframe(partial_db)
+    
+    acciones = ['Añadir entrada', 'Editar entrada', 'Borrar entrada']
+    accion = st.sidebar.selectbox('Selecciona una acción', acciones)
+    if accion=='Añadir entrada':
+        babel.add_entry()
+    elif accion=='Editar entrada':
+        selected = st.selectbox('Seleccionar la entrada a editar', partial_db.index.tolist())
+        babel.edit_entries(partial_db.loc[selected])
+    #remove = st.button('Remove entries?')
+    elif accion=='Borrar entrada':
+        selected = st.multiselect('Seleccionar las entradas a borrar', partial_db.index.tolist())
+        if st.button('¿Borrar la(s) entradas seleccionada(s)?'):
+            babel.remove_entries(partial_db.loc[selected])
         
-        search_key = st.selectbox('Campo', babel.get_db_fields())
-        str_search = st.text_input('Búsqueda', '')
-        partial_db = babel.search_by(search_key, str_search)
-        
-        if str_search != '':
-            table_on = st.checkbox('See as a table')
-            if table_on:
-                st.table(partial_db)
-            else:
-                st.dataframe(partial_db)
-        
-        acciones = ['Añadir entrada', 'Editar entrada', 'Borrar entrada']
-        accion = st.sidebar.selectbox('Selecciona una acción', acciones)
-        if accion=='Añadir entrada':
-            babel.add_entry()
-        elif accion=='Editar entrada':
-            selected = st.selectbox('Seleccionar la entrada a editar', partial_db.index.tolist())
-            babel.edit_entries(partial_db.loc[selected])
-        elif accion=='Borrar entrada':
-            selected = st.multiselect('Seleccionar las entradas a borrar', partial_db.index.tolist())
-            if st.button('¿Borrar la(s) entradas seleccionada(s)?'):
-                babel.remove_entries(partial_db.loc[selected])
-            
+    if st.sidebar.button('Clear backups'):
+        babel.clear_backups()
+    if st.sidebar.button('Save library'):
+        babel.save_db()
+    if st.sidebar.button('Reload library'):
+        babel.read_database()
+
 if __name__ == '__main__':
-    main()
+    args = get_flags()
+    main(args)
