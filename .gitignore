@@ -1,3 +1,4 @@
+**/*.pyc
 **/databases
 **/.vscode
 **/*.csv
