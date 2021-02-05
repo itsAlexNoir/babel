@@ -27,7 +27,6 @@ class Library(object):
     def get_db(self):
         return self.db
 
-    @st.cache
     def read_database(self):
         db = pd.read_csv(self.db_filepath)
         db = db.fillna('')
