@@ -1,13 +1,12 @@
 import argparse
 import streamlit as st
-from library import Library, console
+from src.library import Library, console
 
 
 def get_flags():
     parser = argparse.ArgumentParser(description='Babel UI.')
     parser.add_argument('--db_path', type=str, help='Path to the database')
     return parser.parse_args()
-
 
 def main(args):
     console.log('Starting app')

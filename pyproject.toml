@@ -1,0 +1,11 @@
+[project]
+name = "babel"
+version = "0.1.0"
+description = "This small app serves to manage the records of my own library."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pandas==2.2.3",
+    "rich==14.0.0",
+    "streamlit==1.44.1",
+]
