@@ -1,26 +1,28 @@
-# 📚 babel
+# 📚 Babel
 
-A Streamlit webpage app for keeping record of my library.
+A Streamlit web application for managing a personal library catalog. Babel provides an intuitive interface to organize, search, and maintain records of your book collection.
 
-## Features
+## ✨ Features
 
-- View and explore your library database in a tabular format.
-- Add new entries to the library.
-- Edit existing entries in the library.
-- Search for books by various fields (e.g., title, author, year, etc.).
-- Delete entries from the library.
-- Create automatic backups of the library database.
-- Clear old backups, keeping only the most recent one.
+- **Browse Library**: View and explore your library database in interactive table and dataframe formats
+- **Search Functionality**: Search for books by various fields (title, author, year, language, tags, etc.)
+- **Add Entries**: Easily add new books to your library
+- **Edit Entries**: Modify existing book records
+- **Delete Entries**: Remove books from your library
+- **Automatic Backups**: Create automatic backups of your library database
+- **Backup Management**: Clear old backups while preserving the most recent ones
 
-## Requirements
+## 📋 Requirements
 
-- Python 3.7 or higher
-- Required Python libraries:
-  - `streamlit`
-  - `pandas`
-  - `rich`
+- **Python**: 3.13 or higher
+- **Dependencies**:
+  - `streamlit` (>=1.48.1) - Web app framework
+  - `pandas` (>=2.3.1) - Data manipulation
+  - `rich` (>=14.1.0) - Terminal formatting
 
-## Installation
+## 🚀 Quick Start
+
+### Installation
 
 1. Clone this repository:
    ```bash
@@ -38,35 +40,89 @@ A Streamlit webpage app for keeping record of my library.
    python main.py --db_path <path_to_your_database>
    ```
 
-## Usage
+## 📖 Usage
 
-1. Provide the path to your library database file (CSV format) using the `--db_path` argument.
-2. Use the Streamlit interface to:
-   - View and search your library.
-   - Add, edit, or delete entries.
-   - Manage backups.
+1. **Start the App**: Run the application with your database path (CSV file)
+   ```bash
+   python main.py --db_path databases/babel_db.csv
+   ```
 
-## Database Format
+2. **Main Interface**:
+   - View all books in your library
+   - Use the search bar to find books by specific fields
+   - Choose from actions in the sidebar: Add, Edit, or Delete entries
+   - Save changes with the "Save library" button
+   - Reload the library or clear old backups as needed
 
-The library database should be a CSV file with the following columns:
-- `autor/a`: Author of the book.
-- `título`: Title of the book.
-- `título original`: Original title of the book.
-- `traductor/a`: Translator of the book.
-- `editorial`: Publisher of the book.
-- `año publicacion`: Year of publication.
-- `año edicion`: Year of edition.
-- `idioma`: Language of the book.
-- `etiquetas`: Tags associated with the book (separated by semicolons).
+## 💾 Database Format
 
-## Backup Management
+The library database must be a CSV file with the following columns:
 
-The app automatically creates backups of the database in the `databases/backups` folder. You can clear old backups using the "Clear backups" button in the sidebar.
+| Column | Description |
+|--------|-------------|
+| `autor/a` | Author of the book |
+| `título` | Title of the book |
+| `título original` | Original title (if translated) |
+| `traductor/a` | Translator of the book |
+| `editorial` | Publisher |
+| `año publicacion` | Year of publication |
+| `año edicion` | Year of edition |
+| `idioma` | Language of the book |
+| `etiquetas` | Tags/categories (separated by semicolons) |
 
-## Contributing
+### Example CSV Row:
+```
+autor/a,título,título original,traductor/a,editorial,año publicacion,año edicion,idioma,etiquetas
+Gabriel García Márquez,Cien años de soledad,One Hundred Years of Solitude,Gregory Rabassa,Sudamericana,1967,1997,Español,Realismo mágico;Ficción;Colombia
+```
 
-Feel free to submit issues or pull requests to improve this project.
+## 🔄 Backup Management
 
-## License
+The application automatically creates timestamped backups of your database in the `databases/backups/` directory. This ensures you never lose your library data.
 
-This project is licensed under the MIT License.
+**Features**:
+- Backups are created automatically with timestamps
+- Use the "Clear backups" button to remove old backups
+- Only the most recent backup is preserved when clearing
+
+## 📁 Project Structure
+
+```
+babel/
+├── main.py                 # Application entry point
+├── pyproject.toml          # Project configuration and dependencies
+├── README.md               # This file
+├── LICENSE                 # MIT License
+├── src/
+│   ├── library.py          # Core library management logic
+│   └── __pycache__/
+└── databases/
+    ├── babel_db.csv        # Main database file
+    └── backups/            # Automatic backup directory
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- Submit issues for bugs or feature requests
+- Create pull requests with improvements
+- Suggest enhancements to the interface or functionality
+
+## 📜 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## 💡 Tips & Tricks
+
+- **Keyboard Shortcuts**: Use Streamlit's keyboard shortcuts to refresh the app (Ctrl+R or Cmd+R)
+- **Search Tips**: Leave the search field empty to see all entries; type to filter results
+- **Regular Backups**: The app automatically creates backups, but consider periodic manual exports for extra safety
+- **Data Organization**: Use consistent formatting for author names and tags for better search results
+
+## 📧 About
+
+Babel is a personal project designed to help organize and maintain a personal book collection. Named after Borges' "The Library of Babel," this tool brings order to infinite possibilities of literature.
+
+---
+
+**Last Updated**: December 6, 2025
