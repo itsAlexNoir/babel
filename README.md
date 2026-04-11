@@ -268,10 +268,7 @@ babel/
 ```
 
 
-## Importing from a CSV file
-
-If you already have a book catalogue in a CSV file, `backend/import_csv.py` can populate the database in one step.
-
+> See the earlier **Importing from a CSV file** section for the CSV import workflow and expected file format.
 ### Expected CSV format
 
 The script expects the following column headers (the same format used in the original Babel spreadsheet):
@@ -282,7 +279,7 @@ autor/a, título, título original, editorial, traductor/a, año publicacion, a�
 
 | CSV column | DB field | Notes |
 | --- | --- | --- |
-| `autor/a` | Author | Required — rows without this are skipped |
+| `autor/a` | Author | Optional |
 | `título` | Title | Required — rows without this are skipped |
 | `título original` | Original Title | Omitted if identical to title |
 | `editorial` | Publisher | |
@@ -326,8 +323,8 @@ A summary is printed at the end:
 
 The script checks for duplicates in two ways:
 
-- **Against the database** — any book already in the DB with the same title and author (case-insensitive) is skipped.
-- **Within the CSV** — if the same title+author appears more than once in the file, only the first occurrence is imported.
+- **Against the database** — any book already in the DB with the same `title`, `author`, `publisher`, `publishing_date`, `edition_date`, and `language` is skipped.
+- **Within the CSV** — if the same combination of `title`, `author`, `publisher`, `publishing_date`, `edition_date`, and `language` appears more than once in the file, only the first occurrence is imported.
 
 Running the import a second time on the same file is safe — all rows will be detected as duplicates and skipped.
 
