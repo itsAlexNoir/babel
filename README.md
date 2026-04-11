@@ -1,128 +1,209 @@
-# 📚 Babel
+# Babel — Library Catalogue Manager
 
-A Streamlit web application for managing a personal library catalog. Babel provides an intuitive interface to organize, search, and maintain records of your book collection.
+A local library catalogue app for managing your book collection. Track books, mark them as borrowed or archived, upload covers, and extract book data from photos using OCR.
 
-## ✨ Features
+**Stack:** FastAPI (Python) · SvelteKit (TypeScript) · SQLite · Tesseract OCR · Docker
 
-- **Browse Library**: View and explore your library database in interactive table and dataframe formats
-- **Search Functionality**: Search for books by various fields (title, author, year, language, tags, etc.)
-- **Add Entries**: Easily add new books to your library
-- **Edit Entries**: Modify existing book records
-- **Delete Entries**: Remove books from your library
-- **Automatic Backups**: Create automatic backups of your library database
-- **Backup Management**: Clear old backups while preserving the most recent ones
+## Quick Start with Docker
 
-## 📋 Requirements
-
-- **Python**: 3.13 or higher
-- **Dependencies**:
-  - `streamlit` (>=1.48.1) - Web app framework
-  - `pandas` (>=2.3.1) - Data manipulation
-  - `rich` (>=14.1.0) - Terminal formatting
-
-## 🚀 Quick Start
-
-### Installation
-
-1. Clone this repository:
-   ```bash
-   git clone <repository-url>
-   cd babel
-   ```
-
-2. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```bash
-   python main.py --db_path <path_to_your_database>
-   ```
-
-## 📖 Usage
-
-1. **Start the App**: Run the application with your database path (CSV file)
-   ```bash
-   python main.py --db_path databases/babel_db.csv
-   ```
-
-2. **Main Interface**:
-   - View all books in your library
-   - Use the search bar to find books by specific fields
-   - Choose from actions in the sidebar: Add, Edit, or Delete entries
-   - Save changes with the "Save library" button
-   - Reload the library or clear old backups as needed
-
-## 💾 Database Format
-
-The library database must be a CSV file with the following columns:
-
-| Column | Description |
-|--------|-------------|
-| `autor/a` | Author of the book |
-| `título` | Title of the book |
-| `título original` | Original title (if translated) |
-| `traductor/a` | Translator of the book |
-| `editorial` | Publisher |
-| `año publicacion` | Year of publication |
-| `año edicion` | Year of edition |
-| `idioma` | Language of the book |
-| `etiquetas` | Tags/categories (separated by semicolons) |
-
-### Example CSV Row:
-```
-autor/a,título,título original,traductor/a,editorial,año publicacion,año edicion,idioma,etiquetas
-Gabriel García Márquez,Cien años de soledad,One Hundred Years of Solitude,Gregory Rabassa,Sudamericana,1967,1997,Español,Realismo mágico;Ficción;Colombia
+```bash
+docker compose up --build
 ```
 
-## 🔄 Backup Management
+- **Frontend:** http://localhost:3000
+- **Backend API docs:** http://localhost:8000/docs
 
-The application automatically creates timestamped backups of your database in the `databases/backups/` directory. This ensures you never lose your library data.
+Data (SQLite DB and cover images) persists in `./data/`.
 
-**Features**:
-- Backups are created automatically with timestamps
-- Use the "Clear backups" button to remove old backups
-- Only the most recent backup is preserved when clearing
+## Development Setup
 
-## 📁 Project Structure
+### Prerequisites
 
-```
-babel/
-├── main.py                 # Application entry point
-├── pyproject.toml          # Project configuration and dependencies
-├── README.md               # This file
-├── LICENSE                 # MIT License
-├── src/
-│   ├── library.py          # Core library management logic
-│   └── __pycache__/
-└── databases/
-    ├── babel_db.csv        # Main database file
-    └── backups/            # Automatic backup directory
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [Node.js](https://nodejs.org/) 20+
+- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) (`sudo apt install tesseract-ocr` on Ubuntu/Debian)
+
+### Backend
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-## 🤝 Contributing
+API docs available at http://localhost:8000/docs
 
-Contributions are welcome! Feel free to:
-- Submit issues for bugs or feature requests
-- Create pull requests with improvements
-- Suggest enhancements to the interface or functionality
+### Frontend
 
-## 📜 License
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+App available at http://localhost:5173 (Vite proxies API requests to the backend)
 
-## 💡 Tips & Tricks
+## Importing from a CSV file
 
-- **Keyboard Shortcuts**: Use Streamlit's keyboard shortcuts to refresh the app (Ctrl+R or Cmd+R)
-- **Search Tips**: Leave the search field empty to see all entries; type to filter results
-- **Regular Backups**: The app automatically creates backups, but consider periodic manual exports for extra safety
-- **Data Organization**: Use consistent formatting for author names and tags for better search results
+If you already have a book catalogue in a CSV file, `backend/import_csv.py` can populate the database in one step.
 
-## 📧 About
+### Expected CSV format
 
-Babel is a personal project designed to help organize and maintain a personal book collection. Named after Borges' "The Library of Babel," this tool brings order to infinite possibilities of literature.
+The script expects the following column headers (the same format used in the original Babel spreadsheet):
+
+```
+autor/a, título, título original, editorial, traductor/a, año publicacion, año edicion, idioma, etiquetas
+```
+
+| CSV column | DB field | Notes |
+|---|---|---|
+| `autor/a` | Author | Required — rows without this are skipped |
+| `título` | Title | Required — rows without this are skipped |
+| `título original` | Original Title | Omitted if identical to title |
+| `editorial` | Publisher | |
+| `año publicacion` | Publishing Date | Free-text; year-only values like `1951` are fine |
+| `año edicion` | Edition Date | |
+| `idioma` | Language | |
+| `traductor/a` | Notes (Translator) | Combined into the Notes field |
+| `etiquetas` | Notes (Tags) | Combined into the Notes field |
+
+All books are imported with status **Available**.
+
+### Running the import
+
+**Step 1 — dry run** (preview what will be imported, no changes written):
+
+```bash
+cd backend
+uv run python import_csv.py /path/to/your_catalogue.csv --dry-run
+```
+
+This prints every line that would be added, skipped as a duplicate, or skipped due to missing data. Review the output before proceeding.
+
+**Step 2 — real import:**
+
+```bash
+uv run python import_csv.py /path/to/your_catalogue.csv
+```
+
+A summary is printed at the end:
+
+```
+==================================================
+  Added:            312
+  Skipped (dup):      4
+  Skipped (empty):    1
+  Errors:             0
+==================================================
+```
+
+### Duplicate detection
+
+The script checks for duplicates in two ways:
+
+- **Against the database** — any book already in the DB with the same title and author (case-insensitive) is skipped.
+- **Within the CSV** — if the same title+author appears more than once in the file, only the first occurrence is imported.
+
+Running the import a second time on the same file is safe — all rows will be detected as duplicates and skipped.
+
+### Running inside Docker
+
+If the app is running via Docker Compose, copy the CSV into the container and run the script there:
+
+```bash
+docker compose cp /path/to/your_catalogue.csv backend:/tmp/catalogue.csv
+docker compose exec backend uv run python import_csv.py /tmp/catalogue.csv --dry-run
+docker compose exec backend uv run python import_csv.py /tmp/catalogue.csv
+```
 
 ---
 
-**Last Updated**: December 6, 2025
+## Using the App
+
+### 1. Adding a book manually
+
+1. Click **Catalogue** in the sidebar, then **+ Add Book**.
+2. Fill in at least **Title** and **Author**. All other fields (publisher, dates, language, notes) are optional.
+3. For dates, you can enter just a year (`1605`), a year and month (`2023-05`), or a full date (`2023-05-15`). This is especially useful for classics that have been republished many times — use **Original Publication** for the first edition year and **Publishing Date** for the copy you own.
+4. Click **Add Book**. The book appears in the catalogue.
+
+### 2. Adding a cover image
+
+From the book's detail page you have two options:
+
+- **Fetch Cover** — Searches [Open Library](https://openlibrary.org/) by title and author and downloads the cover automatically. Works best for well-known books.
+- **Upload** — Click the Upload button to pick an image from your computer (JPEG, PNG, or WebP).
+
+### 3. Scanning a book with OCR
+
+This is the fastest way to add a book when you have a physical copy in hand.
+
+1. Click **Scan** in the sidebar.
+2. Drag and drop (or click to browse) one or more photos of the book. The best shots to use are:
+   - The **front cover** — usually contains the title and author.
+   - The **title page** (inside front) — often has publisher and year.
+   - The **copyright page** (verso of title page) — has edition year, ISBN, and original publication info.
+3. Click **Scan X image(s)**. Tesseract will extract the text.
+4. The **Review & Save** form appears pre-filled with whatever the OCR could identify. Check each field, correct any mistakes, and click **Save Book**.
+5. You can expand **View raw OCR text** to see exactly what was detected if a field looks wrong.
+
+> **Tip:** The cleaner and flatter the photo, the better the results. Good lighting matters more than resolution.
+
+### 4. Borrowing and returning books
+
+- Open a book's detail page and click **Mark Borrowed**. The book moves to the **Borrowed** section.
+- To return it, either open the detail page and click **Return**, or go to **Borrowed**, find the book, and click the **Return** button on its card.
+- The book's status returns to *Available* in the catalogue.
+
+### 5. Archiving books
+
+Use the **Archived** status for books stored outside the library (e.g., in boxes in storage).
+
+- Open a book's detail page and click **Archive**.
+- To bring it back, go to **Archived** and click **Restore** on the card, or use the **Restore** button on the detail page.
+
+### 6. Searching
+
+Every section (Catalogue, Borrowed, Archived) has a search bar that filters by **title** and **author** as you type. The search is debounced — just start typing and results update automatically.
+
+### 7. Editing or deleting a book
+
+Open any book from its card, then:
+
+- Click **Edit** to modify any field, including status.
+- Click **Delete** → **Confirm Delete** to permanently remove the book and its cover image.
+
+---
+
+## Features
+
+- **Book catalogue** — Add, edit, delete books with title, author, publisher, dates, language, and more
+- **Cover images** — Upload covers manually or auto-fetch from Open Library
+- **Borrowed books** — Mark books as borrowed and track them in a dedicated section
+- **Archived books** — Archive books stored outside the library (e.g., in boxes)
+- **OCR scanning** — Upload photos of books to extract metadata via Tesseract OCR
+- **Search** — Filter books by title or author across all sections
+- **Flexible dates** — Supports year-only dates (e.g., "1605") for classics
+
+## Project Structure
+
+```
+babel/
+├── backend/           # FastAPI + SQLite
+│   ├── app/
+│   │   ├── main.py        # App entry point
+│   │   ├── database.py    # SQLAlchemy setup
+│   │   ├── models.py      # Book model
+│   │   ├── schemas.py     # Pydantic schemas
+│   │   ├── routers/       # API endpoints
+│   │   └── services/      # OCR + cover services
+│   ├── pyproject.toml     # Python dependencies (uv)
+│   └── Dockerfile
+├── frontend/          # SvelteKit
+│   ├── src/
+│   │   ├── routes/        # Pages
+│   │   └── lib/           # Components, API client, types
+│   └── Dockerfile
+├── docker-compose.yml
+└── README.md
+```
