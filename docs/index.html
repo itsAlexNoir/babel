@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Babel — Library Catalogue Manager</title>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --accent:    #c9a96e;
+      --accent-dim:#a07840;
+      --text:      #e2e4ef;
+      --muted:     #8b8fa8;
+      --code-bg:   #11131c;
+      --radius:    8px;
+      --sidebar-w: 240px;
+      --header-h:  60px;
+      --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Top bar ───────────────────────────────────────────────── */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      background: rgba(15, 17, 23, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .logo svg { color: var(--accent); }
+
+    .header-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+    .header-links a { color: var(--muted); }
+    .header-links a:hover { color: var(--text); text-decoration: none; }
+
+    .gh-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text) !important;
+      padding: 0.35rem 0.9rem;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: border-color 0.15s;
+    }
+    .gh-btn:hover { border-color: var(--accent); text-decoration: none !important; }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      padding-top: var(--header-h);
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    nav.sidebar {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      width: var(--sidebar-w);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      padding: 2rem 1.25rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .nav-group + .nav-group { margin-top: 2rem; }
+
+    .nav-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      padding-left: 0.5rem;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+    .nav-link.active { background: var(--surface); color: var(--accent); }
+
+    .nav-sub {
+      padding-left: 0.75rem;
+      border-left: 1px solid var(--border);
+      margin-left: 0.5rem;
+      margin-top: 0.25rem;
+    }
+    .nav-sub .nav-link { font-size: 0.825rem; }
+
+    /* ── Main content ──────────────────────────────────────────── */
+    main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      max-width: 860px;
+      padding: 3rem 3.5rem 6rem;
+    }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      padding: 3rem 0 4rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(201, 169, 110, 0.1);
+      border: 1px solid rgba(201, 169, 110, 0.25);
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e2e4ef 0%, #8b8fa8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .stack-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* ── Section headings ──────────────────────────────────────── */
+    .section { margin-bottom: 5rem; }
+
+    .section-anchor { display: block; position: relative; top: calc(-1 * var(--header-h) - 1rem); visibility: hidden; }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 2rem 0 0.75rem;
+    }
+
+    h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    p { color: var(--muted); margin-bottom: 1rem; }
+    p strong { color: var(--text); }
+
+    /* ── Code blocks ───────────────────────────────────────────── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      position: relative;
+    }
+
+    pre code {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: #c9d1d9;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15em 0.45em;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* Syntax hints */
+    .c  { color: #6a9955; } /* comment */
+    .k  { color: #569cd6; } /* keyword */
+    .s  { color: #ce9178; } /* string */
+    .v  { color: #9cdcfe; } /* variable */
+    .n  { color: #4ec9b0; } /* number/type */
+    .p  { color: #c586c0; } /* punctuation/special */
+
+    /* Copy button */
+    .code-wrap { position: relative; }
+    .copy-btn {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-family: var(--font-sans);
+      padding: 0.25rem 0.6rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .code-wrap:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .copy-btn.copied { color: #4ec9b0; border-color: #4ec9b0; }
+
+    /* ── Callout ───────────────────────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      margin: 1.25rem 0;
+      border-left: 3px solid;
+    }
+    .callout-tip  { background: rgba(78, 201, 176, 0.07); border-color: #4ec9b0; }
+    .callout-info { background: rgba(86, 156, 214, 0.07); border-color: #569cd6; }
+    .callout-warn { background: rgba(201, 169, 110, 0.07); border-color: var(--accent); }
+
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .callout-body { font-size: 0.875rem; color: var(--muted); }
+    .callout-body strong { color: var(--text); }
+    .callout-body p { margin: 0; }
+
+    /* ── Steps ─────────────────────────────────────────────────── */
+    .steps { counter-reset: step; margin: 1.5rem 0; }
+
+    .step {
+      display: flex;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .step-num {
+      counter-increment: step;
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-color: var(--accent-dim);
+      background: rgba(201, 169, 110, 0.05);
+      margin-top: 0.2rem;
+    }
+
+    .step-body h3 { margin-top: 0; }
+    .step-body p:last-child { margin-bottom: 0; }
+
+    /* ── Feature grid ──────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: border-color 0.15s;
+    }
+    .feature-card:hover { border-color: var(--accent-dim); }
+
+    .feature-icon { font-size: 1.4rem; margin-bottom: 0.75rem; }
+    .feature-card h4 { 
+      font-size: 0.85rem; 
+      font-weight: 600;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: 0;
+      margin: 0 0 0.4rem;
+    }
+    .feature-card p { font-size: 0.825rem; margin: 0; }
+
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 1rem;
+      background: var(--surface);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: top;
+    }
+
+    td strong, td code { color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.015); }
+
+    /* ── Divider ───────────────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      margin-left: var(--sidebar-w);
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 3.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--accent); }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav.sidebar { display: none; }
+      main { margin-left: 0; padding: 2rem 1.25rem 4rem; }
+      footer { margin-left: 0; padding: 1.25rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+      .hero h1 { font-size: 2rem; }
+      .header-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────── -->
+<header>
+  <a class="logo" href="#" style="text-decoration:none;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    Babel
+  </a>
+  <div class="header-links">
+    <a href="#install">Install</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#tutorial">Tutorial</a>
+    <a href="https://github.com/adelacalle/babel" class="gh-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ── Sidebar ────────────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="nav-group">
+    <div class="nav-label">Overview</div>
+    <a class="nav-link" href="#top">Introduction</a>
+    <a class="nav-link" href="#features">Features</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Getting Started</div>
+    <a class="nav-link" href="#install">Installation</a>
+    <div class="nav-sub">
+      <a class="nav-link" href="#install-docker">Docker (recommended)</a>
+      <a class="nav-link" href="#install-dev">Dev setup</a>
+      <a class="nav-link" href="#prerequisites">Prerequisites</a>
+    </div>
+    <a class="nav-link" href="#quickstart">Quickstart</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Tutorial</div>
+    <a class="nav-link" href="#tut-add">1 · Add a book</a>
+    <a class="nav-link" href="#tut-covers">2 · Cover images</a>
+    <a class="nav-link" href="#tut-scan">3 · Scan with OCR</a>
+    <a class="nav-link" href="#tut-borrow">4 · Borrow &amp; return</a>
+    <a class="nav-link" href="#tut-archive">5 · Archiving</a>
+    <a class="nav-link" href="#tut-search">6 · Search</a>
+    <a class="nav-link" href="#tut-import">7 · Import CSV</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Reference</div>
+    <a class="nav-link" href="#csv-format">CSV format</a>
+    <a class="nav-link" href="#structure">Project structure</a>
+  </div>
+</nav>
+
+<!-- ── Main ───────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero" id="top">
+    <div class="badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Library Catalogue Manager
+    </div>
+    <h1>Babel</h1>
+    <p>
+      A self-hosted web app to manage your personal book collection.
+      Track books, upload covers, mark items as borrowed or archived,
+      and extract metadata from photos using OCR — all from your browser.
+    </p>
+    <div class="stack-pills">
+      <span class="pill">FastAPI</span>
+      <span class="pill">SvelteKit</span>
+      <span class="pill">SQLite</span>
+      <span class="pill">Tesseract OCR</span>
+      <span class="pill">Docker</span>
+      <span class="pill">Python · TypeScript</span>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <span class="section-anchor" id="features"></span>
+  <section class="section">
+    <h2>Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h4>Book Catalogue</h4>
+        <p>Add, edit, and delete books with rich metadata: title, author, publisher, dates, language, and notes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <h4>Cover Images</h4>
+        <p>Upload covers manually or auto-fetch from Open Library by title and author.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📷</div>
+        <h4>OCR Scanning</h4>
+        <p>Photograph a book's cover or title page and Tesseract will pre-fill the metadata form for you.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔖</div>
+        <h4>Borrowed &amp; Archived</h4>
+        <p>Dedicated views for lent-out books and books stored off-site, with one-click status changes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h4>Live Search</h4>
+        <p>Debounced search across every section filters by title and author as you type.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📥</div>
+        <h4>CSV Import</h4>
+        <p>Bulk-import an existing spreadsheet catalogue in one command, with dry-run preview and duplicate detection.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Install ────────────────────────────────────────────────── -->
+  <span class="section-anchor" id="install"></span>
+  <section class="section">
+    <h2>Installation</h2>
+    <p>
+      Babel ships as a two-container Docker Compose app (frontend + backend). Docker is the recommended way to run it — no Python or Node.js setup required on the host.
+    </p>
+
+    <span class="section-anchor" id="install-docker"></span>
+    <h3>Docker (recommended)</h3>
+
+    <h4>Prerequisites</h4>
+    <ul style="color:var(--muted);margin:0 0 1rem 1.25rem;line-height:2;">
+      <li><a href="https://docs.docker.com/engine/install/">Docker Engine</a> 24+ or Docker Desktop</li>
+      <li><a href="https://docs.docker.com/compose/">Docker Compose</a> v2 (ships with Docker Desktop / modern Docker Engine)</li>
+    </ul>
+
+    <h4>Clone &amp; run</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>git clone https://github.com/adelacalle/babel.git
+cd babel
+docker compose up --build</code></pre>
+    </div>
+
+    <p>That's it. Docker pulls/builds the images, creates a SQLite database in <code>./data/db/</code>, and starts both services.</p>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div class="callout-body">
+        <p>On subsequent starts you can drop the <code>--build</code> flag: <code>docker compose up</code>.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Service</th><th>URL</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Frontend</strong></td><td><a href="http://localhost:3000">localhost:3000</a></td><td>SvelteKit web app</td></tr>
+          <tr><td><strong>Backend API</strong></td><td><a href="http://localhost:8000">localhost:8000</a></td><td>FastAPI · JSON REST</td></tr>
+          <tr><td><strong>API docs</strong></td><td><a href="http://localhost:8000/docs">localhost:8000/docs</a></td><td>Swagger UI (interactive)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>All data (SQLite database and uploaded cover images) persists in the <code>./data/</code> directory on your host machine and survives container restarts.</p>
+
+    <hr />
+
+    <span class="section-anchor" id="install-dev"></span>
+    <h3>Development setup</h3>
+    <p>Run each service directly on your machine for hot-reload during local development.</p>
+
+    <span class="section-anchor" id="prerequisites"></span>
+    <h4>Prerequisites</h4>
+    <ul style="color:var(--muted);margin:0 0 1rem 1.25rem;line-height:2;">
+      <li><a href="https://docs.astral.sh/uv/">uv</a> — fast Python package manager</li>
+      <li><a href="https://nodejs.org/">Node.js</a> 20+</li>
+      <li>Tesseract OCR — <code>sudo apt install tesseract-ocr</code> on Ubuntu/Debian</li>
+    </ul>
+
+    <h4>Backend</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>cd backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000</code></pre>
+    </div>
+
+    <h4>Frontend</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+    </div>
+
+    <p>The Vite dev server runs on <a href="http://localhost:5173">localhost:5173</a> and proxies API requests to the backend automatically. API docs remain at <a href="http://localhost:8000/docs">localhost:8000/docs</a>.</p>
+  </section>
+
+  <!-- ── Quickstart ─────────────────────────────────────────────── -->
+  <span class="section-anchor" id="quickstart"></span>
+  <section class="section">
+    <h2>Quickstart</h2>
+    <p>Get from zero to a running catalogue in under two minutes.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Start the app</h3>
+          <div class="code-wrap">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>git clone https://github.com/adelacalle/babel.git &amp;&amp; cd babel
+docker compose up --build</code></pre>
+          </div>
+          <p>Wait for the <em>"Application startup complete"</em> log line from the backend.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Open the app</h3>
+          <p>Visit <a href="http://localhost:3000">http://localhost:3000</a> in your browser. You'll land on the <strong>Catalogue</strong> page — empty for now.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Add your first book</h3>
+          <p>Click <strong>+ Add Book</strong> and fill in at least a title and author, then click <strong>Add Book</strong>. The card appears in the catalogue immediately.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Fetch a cover</h3>
+          <p>Open the book's detail page and click <strong>Fetch Cover</strong>. Babel queries <a href="https://openlibrary.org/">Open Library</a> and downloads the cover image automatically.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Try OCR scanning</h3>
+          <p>Click <strong>Scan</strong> in the sidebar, upload a photo of a book cover, and hit <strong>Scan 1 image</strong>. Review the pre-filled form and save.</p>
+          <div class="callout callout-tip">
+            <span class="callout-icon">✅</span>
+            <div class="callout-body">
+              <p><strong>Tip:</strong> Photos of the title page or copyright page often yield the most complete metadata (title, author, publisher, year, ISBN).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tutorial ───────────────────────────────────────────────── -->
+  <span class="section-anchor" id="tutorial"></span>
+  <section class="section">
+    <h2>Tutorial</h2>
+    <p>A walk-through of every major feature in Babel.</p>
+
+    <!-- 1. Add a book -->
+    <span class="section-anchor" id="tut-add"></span>
+    <h3>1 · Adding a book manually</h3>
+    <p>
+      Click <strong>Catalogue</strong> in the sidebar, then <strong>+ Add Book</strong>.
+      Fill in at minimum <strong>Title</strong> and <strong>Author</strong>.
+    </p>
+    <p>
+      For dates you can enter just a year (<code>1605</code>), a year and month (<code>2023-05</code>), or a full date (<code>2023-05-15</code>).
+      Use <strong>Original Publication</strong> for the first edition year and <strong>Publishing Date</strong> for the copy you own — handy for classics with many editions.
+    </p>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div class="callout-body"><p>All fields except Title and Author are optional and can be edited later.</p></div>
+    </div>
+
+    <!-- 2. Covers -->
+    <span class="section-anchor" id="tut-covers"></span>
+    <h3>2 · Adding a cover image</h3>
+    <p>From the book's detail page you have two options:</p>
+    <ul style="color:var(--muted);margin:0.25rem 0 1rem 1.25rem;line-height:2.2;">
+      <li><strong style="color:var(--text);">Fetch Cover</strong> — searches <a href="https://openlibrary.org/">Open Library</a> by title and author and downloads the cover automatically. Works best for well-known books with an ISBN.</li>
+      <li><strong style="color:var(--text);">Upload</strong> — click the Upload button to pick a local image (JPEG, PNG, or WebP).</li>
+    </ul>
+
+    <!-- 3. OCR -->
+    <span class="section-anchor" id="tut-scan"></span>
+    <h3>3 · Scanning a book with OCR</h3>
+    <p>This is the fastest way to add a book when you have a physical copy in hand.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><p>Click <strong>Scan</strong> in the sidebar.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p>Drag and drop — or click to browse — one or more photos of the book. The best shots are:</p>
+          <ul style="color:var(--muted);margin:0.25rem 0 0 1.25rem;line-height:2.2;">
+            <li><strong style="color:var(--text);">Front cover</strong> — usually has the title and author.</li>
+            <li><strong style="color:var(--text);">Title page</strong> (inside the front cover) — often has publisher and year.</li>
+            <li><strong style="color:var(--text);">Copyright page</strong> (verso of the title page) — edition year, ISBN, original publication info.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><p>Click <strong>Scan X image(s)</strong>. Tesseract extracts the text and populates the <strong>Review &amp; Save</strong> form.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p>Check each field, correct any mistakes, then click <strong>Save Book</strong>. Expand <strong>View raw OCR text</strong> if a field looks wrong — you can copy-paste from there.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">✅</span>
+      <div class="callout-body"><p><strong>Tip:</strong> Good lighting matters more than resolution. Flat, evenly lit photos give much better OCR results than angled or shadowed shots.</p></div>
+    </div>
+
+    <!-- 4. Borrow -->
+    <span class="section-anchor" id="tut-borrow"></span>
+    <h3>4 · Borrowing and returning books</h3>
+    <ul style="color:var(--muted);margin:0.25rem 0 1rem 1.25rem;line-height:2.2;">
+      <li>Open a book's detail page and click <strong style="color:var(--text);">Mark Borrowed</strong>. The book moves to the <strong>Borrowed</strong> section.</li>
+      <li>To return it, open the detail page and click <strong style="color:var(--text);">Return</strong>, or go to <strong>Borrowed</strong> and click the <strong>Return</strong> button on the card.</li>
+      <li>The book's status reverts to <em>Available</em> and it reappears in the main catalogue.</li>
+    </ul>
+
+    <!-- 5. Archive -->
+    <span class="section-anchor" id="tut-archive"></span>
+    <h3>5 · Archiving books</h3>
+    <p>Use <strong>Archived</strong> status for books stored outside the library (e.g., in boxes in a storage room).</p>
+    <ul style="color:var(--muted);margin:0.25rem 0 1rem 1.25rem;line-height:2.2;">
+      <li>Open a book's detail page and click <strong style="color:var(--text);">Archive</strong>.</li>
+      <li>To restore it, go to <strong>Archived</strong> and click <strong>Restore</strong> on the card, or use the <strong>Restore</strong> button on the detail page.</li>
+    </ul>
+
+    <!-- 6. Search -->
+    <span class="section-anchor" id="tut-search"></span>
+    <h3>6 · Searching</h3>
+    <p>Every section (Catalogue, Borrowed, Archived) has a search bar at the top. Start typing — results filter by <strong>title</strong> and <strong>author</strong> in real time. The search is debounced so it waits until you pause before hitting the API.</p>
+
+    <!-- 7. Import CSV -->
+    <span class="section-anchor" id="tut-import"></span>
+    <h3>7 · Importing from a CSV file</h3>
+    <p>
+      If you already have a catalogue in a spreadsheet, <code>backend/import_csv.py</code> can bulk-import it in one command.
+      Always run a dry-run first to preview what will happen.
+    </p>
+
+    <h4>Step 1 — dry run</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>cd backend
+uv run python import_csv.py /path/to/catalogue.csv --dry-run</code></pre>
+    </div>
+
+    <h4>Step 2 — import</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>uv run python import_csv.py /path/to/catalogue.csv</code></pre>
+    </div>
+
+    <p>A summary is printed at the end:</p>
+    <div class="code-wrap">
+<pre><code>==================================================
+  Added:            312
+  Skipped (dup):      4
+  Skipped (empty):    1
+  Errors:             0
+==================================================</code></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div class="callout-body">
+        <p>Running the import twice on the same file is safe — all rows will be detected as duplicates and skipped.</p>
+      </div>
+    </div>
+
+    <h4>Running inside Docker</h4>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code>docker compose cp /path/to/catalogue.csv backend:/tmp/catalogue.csv
+docker compose exec backend uv run python import_csv.py /tmp/catalogue.csv --dry-run
+docker compose exec backend uv run python import_csv.py /tmp/catalogue.csv</code></pre>
+    </div>
+  </section>
+
+  <!-- ── CSV format ─────────────────────────────────────────────── -->
+  <span class="section-anchor" id="csv-format"></span>
+  <section class="section">
+    <h2>CSV format reference</h2>
+    <p>The import script expects the following column headers:</p>
+    <div class="code-wrap">
+<pre><code>autor/a, título, título original, editorial, traductor/a, año publicacion, año edicion, idioma, etiquetas</code></pre>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>CSV column</th><th>DB field</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>autor/a</code></td><td>Author</td><td>Required — rows without this are skipped</td></tr>
+          <tr><td><code>título</code></td><td>Title</td><td>Required — rows without this are skipped</td></tr>
+          <tr><td><code>título original</code></td><td>Original Title</td><td>Omitted if identical to title</td></tr>
+          <tr><td><code>editorial</code></td><td>Publisher</td><td></td></tr>
+          <tr><td><code>año publicacion</code></td><td>Publishing Date</td><td>Free-text; year-only values like <code>1951</code> are fine</td></tr>
+          <tr><td><code>año edicion</code></td><td>Edition Date</td><td></td></tr>
+          <tr><td><code>idioma</code></td><td>Language</td><td></td></tr>
+          <tr><td><code>traductor/a</code></td><td>Notes (Translator)</td><td>Combined into the Notes field</td></tr>
+          <tr><td><code>etiquetas</code></td><td>Notes (Tags)</td><td>Combined into the Notes field</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>All imported books are assigned status <strong>Available</strong>.</p>
+  </section>
+
+  <!-- ── Project structure ──────────────────────────────────────── -->
+  <span class="section-anchor" id="structure"></span>
+  <section class="section">
+    <h2>Project structure</h2>
+    <div class="code-wrap">
+<pre><code>babel/
+├── backend/                 <span class="c"># FastAPI + SQLite</span>
+│   ├── app/
+│   │   ├── main.py          <span class="c"># App entry point &amp; middleware</span>
+│   │   ├── database.py      <span class="c"># SQLAlchemy setup</span>
+│   │   ├── models.py        <span class="c"># Book ORM model</span>
+│   │   ├── schemas.py       <span class="c"># Pydantic request/response schemas</span>
+│   │   ├── routers/         <span class="c"># API endpoints (books, borrowed, archived, ocr)</span>
+│   │   └── services/        <span class="c"># OCR + cover fetch services</span>
+│   ├── import_csv.py        <span class="c"># Bulk import script</span>
+│   └── pyproject.toml       <span class="c"># Python dependencies (uv)</span>
+├── frontend/                <span class="c"># SvelteKit (TypeScript)</span>
+│   └── src/
+│       ├── routes/          <span class="c"># Pages: /, /books, /borrowed, /archived, /scan</span>
+│       └── lib/             <span class="c"># Components, API client, types</span>
+├── data/                    <span class="c"># Persisted data (git-ignored)</span>
+│   ├── db/                  <span class="c"># SQLite database file</span>
+│   └── uploads/covers/      <span class="c"># Uploaded &amp; fetched cover images</span>
+└── docker-compose.yml</code></pre>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────── -->
+<footer>
+  <span>Babel — Library Catalogue Manager</span>
+  <span>
+    <a href="https://github.com/adelacalle/babel">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="http://localhost:8000/docs">API docs</a>
+  </span>
+</footer>
+
+<script>
+  /* ── Copy buttons ──────────────────────────────────────────── */
+  function copyCode(btn) {
+    const pre = btn.closest('.code-wrap').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  /* ── Active sidebar link ───────────────────────────────────── */
+  const anchors = document.querySelectorAll('.section-anchor');
+  const navLinks = document.querySelectorAll('.sidebar .nav-link');
+
+  const idToLink = {};
+  navLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    idToLink[id] = link;
+  });
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const link = idToLink[entry.target.id];
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-60px 0px -80% 0px' });
+
+  anchors.forEach(a => obs.observe(a));
+</script>
+</body>
+</html>
