@@ -1,6 +1,10 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      platforms:
+        - linux/arm64
+    platform: linux/arm64
     ports:
       - "8000:8000"
     volumes:
@@ -12,7 +16,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      platforms:
+        - linux/arm64
+    platform: linux/arm64
     ports:
       - "3000:3000"
     environment:
