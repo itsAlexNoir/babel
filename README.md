@@ -10,8 +10,8 @@ A local library catalogue app for managing your book collection. Track books, ma
 docker compose up --build
 ```
 
-- **Frontend:** http://localhost:3000
-- **Backend API docs:** http://localhost:8000/docs
+- **Frontend:** <http://localhost:3000>
+- **Backend API docs:** <http://localhost:8000/docs>
 
 Data (SQLite DB and cover images) persists in `./data/`.
 
@@ -31,7 +31,7 @@ uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-API docs available at http://localhost:8000/docs
+API docs available at <http://localhost:8000/docs>
 
 ### Frontend
 
@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-App available at http://localhost:5173 (Vite proxies API requests to the backend)
+App available at <http://localhost:5173> (Vite proxies API requests to the backend)
 
 ## Importing from a CSV file
 
@@ -51,12 +51,12 @@ If you already have a book catalogue in a CSV file, `backend/import_csv.py` can 
 
 The script expects the following column headers (the same format used in the original Babel spreadsheet):
 
-```
+```text
 autor/a, título, título original, editorial, traductor/a, año publicacion, año edicion, idioma, etiquetas
 ```
 
 | CSV column | DB field | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `autor/a` | Author | Required — rows without this are skipped |
 | `título` | Title | Required — rows without this are skipped |
 | `título original` | Original Title | Omitted if identical to title |
@@ -88,7 +88,7 @@ uv run python import_csv.py /path/to/your_catalogue.csv
 
 A summary is printed at the end:
 
-```
+```text
 ==================================================
   Added:            312
   Skipped (dup):      4
@@ -187,7 +187,7 @@ Open any book from its card, then:
 
 ## Project Structure
 
-```
+```text
 babel/
 ├── backend/           # FastAPI + SQLite
 │   ├── app/
