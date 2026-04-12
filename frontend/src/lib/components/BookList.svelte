@@ -143,50 +143,50 @@
 							{#if book.original_title}
 								<span class="original-title">{book.original_title}</span>
 							{/if}
-						{#if book.tags}
-							<div class="row-tags">
-								{#each book.tags.split(';') as tag}
-									<span class="row-tag">{tag.trim()}</span>
-								{/each}
-							</div>
-						{/if}
-					</td>
-					<td class="col-author">
-						{book.author}
-						{#if book.translator}
-							<span class="original-title">tr. {book.translator}</span>
-						{/if}
-					</td>
-						<td class="col-publisher">{book.publisher ?? '—'}</td>
-						<td class="col-year">{year(book) ?? '—'}</td>
-						<td class="col-language">{book.language ?? '—'}</td>
-						<td class="col-borrower">
-							{#if book.borrower_name}
-								<span class="borrower-name">{book.borrower_name}</span>
-								{#if book.borrowed_at}
-									<span class="original-title">{new Date(book.borrowed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-								{/if}
-							{:else if book.archived_at}
-								<span class="original-title">archived {new Date(book.archived_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-							{:else}
-								—
+							{#if book.tags}
+								<div class="row-tags">
+									{#each book.tags.split(';') as tag}
+										<span class="row-tag">{tag.trim()}</span>
+									{/each}
+								</div>
 							{/if}
 						</td>
-						<td class="col-added">{new Date(book.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-						<td class="col-status">
-							<span class="badge {book.status}">{book.status}</span>
+						<td class="col-author">
+							{book.author}
+							{#if book.translator}
+								<span class="original-title">tr. {book.translator}</span>
+							{/if}
 						</td>
-						{#if showActions && onAction}
-							<td class="col-actions" onclick={(e) => e.stopPropagation()}>
-								{#if book.status === 'available'}
-									<button class="small" onclick={() => onAction('borrow', book)}>Borrow</button>
-								{:else if book.status === 'borrowed'}
-									<button class="small" onclick={() => onAction('return', book)}>Return</button>
-								{:else if book.status === 'archived'}
-									<button class="small" onclick={() => onAction('restore', book)}>Restore</button>
-								{/if}
-							</td>
+					<td class="col-publisher">{book.publisher ?? '—'}</td>
+					<td class="col-year">{year(book) ?? '—'}</td>
+					<td class="col-language">{book.language ?? '—'}</td>
+					<td class="col-borrower">
+						{#if book.borrower_name}
+							<span class="borrower-name">{book.borrower_name}</span>
+							{#if book.borrowed_at}
+								<span class="original-title">{new Date(book.borrowed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+							{/if}
+						{:else if book.archived_at}
+							<span class="original-title">archived {new Date(book.archived_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+						{:else}
+							—
 						{/if}
+					</td>
+					<td class="col-added">{new Date(book.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+					<td class="col-status">
+						<span class="badge {book.status}">{book.status}</span>
+					</td>
+					{#if showActions && onAction}
+						<td class="col-actions" onclick={(e) => e.stopPropagation()}>
+							{#if book.status === 'available'}
+								<button class="small" onclick={() => onAction('borrow', book)}>Borrow</button>
+							{:else if book.status === 'borrowed'}
+								<button class="small" onclick={() => onAction('return', book)}>Return</button>
+							{:else if book.status === 'archived'}
+								<button class="small" onclick={() => onAction('restore', book)}>Restore</button>
+							{/if}
+						</td>
+					{/if}
 					</tr>
 				{/each}
 			</tbody>
