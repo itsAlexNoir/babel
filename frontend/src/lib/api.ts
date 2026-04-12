@@ -1,4 +1,4 @@
-import type { Book, BookCreate, BookStats, BookStatus, BookUpdate, OCRResult } from './types';
+import type { Book, BookCreate, BookStats, BookStatus, BookUpdate, ImportResult, OCRResult } from './types';
 
 const BASE = '';
 
@@ -85,6 +85,24 @@ export const api = {
 			});
 			if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
 			return res.json();
+		}
+	},
+	data: {
+		async importCsv(file: File): Promise<ImportResult> {
+			const form = new FormData();
+			form.append('file', file);
+			const res = await fetch(`${BASE}/api/data/import-csv`, {
+				method: 'POST',
+				body: form
+			});
+			if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+			return res.json();
+		},
+		exportUrl(format: string = 'json'): string {
+			return `${BASE}/api/data/export?format=${encodeURIComponent(format)}`;
+		},
+		backupUrl(): string {
+			return `${BASE}/api/data/backup`;
 		}
 	}
 };

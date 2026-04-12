@@ -63,3 +63,10 @@ export interface BookStats {
 	borrowed: number;
 	archived: number;
 }
+
+export interface ImportResult {
+	added: number;
+	skipped_duplicate: number;
+	skipped_missing: number;
+	errors: number;
+}

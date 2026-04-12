@@ -1,7 +1,7 @@
 """
 Dump the Babel SQLite database to a file and create a backup copy of the DB.
 
-Supported output formats: json (default), csv.
+Supported output formats: json (default), csv, jsonl.
 
 The script also copies the raw SQLite database file to the output directory.
 
@@ -9,15 +9,18 @@ Usage:
   uv run python dump_db.py <output_directory>
   uv run python dump_db.py <output_directory> --format csv
   uv run python dump_db.py <output_directory> --format json
+  uv run python dump_db.py <output_directory> --format jsonl
 """
 
-import argparse
 import csv
 import json
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Annotated
+
+import typer
 
 # Ensure the backend app package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -71,6 +74,21 @@ def dump_csv(books: list[dict], output_path: Path) -> None:
         writer.writerows(books)
 
 
+def dump_jsonl(books: list[dict], output_path: Path) -> None:
+    with open(output_path, "w", encoding="utf-8") as f:
+        for book in books:
+            f.write(json.dumps(book, ensure_ascii=False) + "\n")
+
+
+SUPPORTED_FORMATS = ["json", "csv", "jsonl"]
+
+DUMPERS: dict[str, tuple[str, callable]] = {
+    "json": (".json", dump_json),
+    "csv": (".csv", dump_csv),
+    "jsonl": (".jsonl", dump_jsonl),
+}
+
+
 def dump_database(output_dir: Path, fmt: str = "json") -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -86,15 +104,13 @@ def dump_database(output_dir: Path, fmt: str = "json") -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # --- Export data file ---
-    if fmt == "json":
-        data_file = output_dir / f"babel_dump_{timestamp}.json"
-        dump_json(rows, data_file)
-    elif fmt == "csv":
-        data_file = output_dir / f"babel_dump_{timestamp}.csv"
-        dump_csv(rows, data_file)
-    else:
-        print(f"ERROR: Unsupported format '{fmt}'", file=sys.stderr)
+    if fmt not in DUMPERS:
+        print(f"ERROR: Unsupported format '{fmt}'. Choose from: {', '.join(SUPPORTED_FORMATS)}", file=sys.stderr)
         sys.exit(1)
+
+    ext, dumper = DUMPERS[fmt]
+    data_file = output_dir / f"babel_dump_{timestamp}{ext}"
+    dumper(rows, data_file)
 
     print(f"  Exported {len(rows)} books → {data_file}")
 
@@ -114,15 +130,19 @@ def dump_database(output_dir: Path, fmt: str = "json") -> None:
     print("=" * 50)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Dump the Babel database to a file and create a DB backup.")
-    parser.add_argument("output_dir", help="Directory where the dump and DB copy will be saved")
-    parser.add_argument(
-        "--format",
-        choices=["json", "csv"],
-        default="json",
-        help="Output format for the data dump (default: json)",
-    )
-    args = parser.parse_args()
+app = typer.Typer(help="Dump the Babel database to a file and create a DB backup.")
 
-    dump_database(Path(args.output_dir), fmt=args.format)
+
+@app.command()
+def main(
+    output_dir: Annotated[Path, typer.Argument(help="Directory where the dump and DB copy will be saved")],
+    fmt: Annotated[str, typer.Option("--format", help=f"Output format for the data dump (default: json). Choices: {', '.join(SUPPORTED_FORMATS)}")] = "json",
+):
+    if fmt not in SUPPORTED_FORMATS:
+        typer.echo(f"ERROR: Unsupported format '{fmt}'. Choose from: {', '.join(SUPPORTED_FORMATS)}", err=True)
+        raise typer.Exit(code=1)
+    dump_database(output_dir, fmt=fmt)
+
+
+if __name__ == "__main__":
+    app()

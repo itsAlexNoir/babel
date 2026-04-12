@@ -10,10 +10,12 @@ Usage:
   uv run python import_csv.py <path/to/file.csv> --dry-run
 """
 
-import argparse
 import csv
 import sys
 from pathlib import Path
+from typing import Annotated
+
+import typer
 
 # Ensure the backend app package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -184,14 +186,16 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
     print("=" * 50)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Import books from CSV into Babel database.")
-    parser.add_argument("csv_file", help="Path to the CSV file")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview what would be imported without writing to the database",
-    )
-    args = parser.parse_args()
+app = typer.Typer(help="Import books from CSV into Babel database.")
 
-    import_csv(Path(args.csv_file), dry_run=args.dry_run)
+
+@app.command()
+def main(
+    csv_file: Annotated[Path, typer.Argument(help="Path to the CSV file")],
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Preview what would be imported without writing to the database")] = False,
+):
+    import_csv(csv_file, dry_run=dry_run)
+
+
+if __name__ == "__main__":
+    app()
