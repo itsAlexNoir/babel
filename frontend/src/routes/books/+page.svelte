@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import { api } from '$lib/api';
 	import type { Book } from '$lib/types';
 	import BookList from '$lib/components/BookList.svelte';
@@ -9,7 +11,7 @@
 
 	let books: Book[] = $state([]);
 	let loading = $state(true);
-	let search = $state('');
+	let search = $state(page.url.searchParams.get('search') ?? '');
 	let viewMode = $state<'grid' | 'list'>('grid');
 	let borrowingBook = $state<Book | null>(null);
 
@@ -31,6 +33,13 @@
 
 	function handleSearch(query: string) {
 		search = query;
+		const url = new URL(page.url);
+		if (query) {
+			url.searchParams.set('search', query);
+		} else {
+			url.searchParams.delete('search');
+		}
+		replaceState(url, {});
 		load();
 	}
 
