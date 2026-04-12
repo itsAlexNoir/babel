@@ -31,6 +31,11 @@ class Book(Base):
         Enum(BookStatus), nullable=False, default=BookStatus.available
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    translator: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    tags: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    borrower_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    borrowed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )

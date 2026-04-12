@@ -1,14 +1,15 @@
 import os
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Book, BookStatus
-from ..schemas import BookCreate, BookResponse, BookStats, BookUpdate, StatusUpdate
+from ..schemas import BookCreate, BookResponse, BookStats, BookUpdate, BorrowRequest, CountItem, LibraryStats, StatusUpdate
 from ..services.cover_service import fetch_cover_from_openlibrary
 
 router = APIRouter(prefix="/api/books", tags=["books"])
@@ -25,6 +26,63 @@ def get_stats(db: Session = Depends(get_db)):
     borrowed = db.query(Book).filter(Book.status == BookStatus.borrowed).count()
     archived = db.query(Book).filter(Book.status == BookStatus.archived).count()
     return BookStats(total=total, available=available, borrowed=borrowed, archived=archived)
+
+
+@router.get("/library-stats", response_model=LibraryStats)
+def get_library_stats(db: Session = Depends(get_db)):
+    total = db.query(Book).count()
+    available = db.query(Book).filter(Book.status == BookStatus.available).count()
+    borrowed = db.query(Book).filter(Book.status == BookStatus.borrowed).count()
+    archived = db.query(Book).filter(Book.status == BookStatus.archived).count()
+
+    top_authors = [
+        CountItem(name=name, count=c)
+        for name, c in db.query(Book.author, func.count()).group_by(Book.author).order_by(func.count().desc()).limit(15).all()
+    ]
+
+    top_publishers = [
+        CountItem(name=name, count=c)
+        for name, c in db.query(Book.publisher, func.count())
+        .filter(Book.publisher.isnot(None))
+        .group_by(Book.publisher)
+        .order_by(func.count().desc())
+        .limit(15)
+        .all()
+    ]
+
+    languages = [
+        CountItem(name=name or "Unknown", count=c)
+        for name, c in db.query(Book.language, func.count()).group_by(Book.language).order_by(func.count().desc()).all()
+    ]
+
+    # Books by decade using publishing_date (fall back to edition_date)
+    books = db.query(Book.publishing_date, Book.edition_date).all()
+    decade_counts: dict[str, int] = {}
+    for pub, ed in books:
+        year_str = pub or ed
+        if not year_str:
+            continue
+        try:
+            year = int(year_str[:4])
+            decade = f"{(year // 10) * 10}s"
+            decade_counts[decade] = decade_counts.get(decade, 0) + 1
+        except (ValueError, IndexError):
+            continue
+    books_by_decade = [
+        CountItem(name=d, count=c)
+        for d, c in sorted(decade_counts.items())
+    ]
+
+    return LibraryStats(
+        total=total,
+        available=available,
+        borrowed=borrowed,
+        archived=archived,
+        top_authors=top_authors,
+        top_publishers=top_publishers,
+        languages=languages,
+        books_by_decade=books_by_decade,
+    )
 
 
 @router.get("", response_model=list[BookResponse])
@@ -91,6 +149,26 @@ def update_status(book_id: int, data: StatusUpdate, db: Session = Depends(get_db
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     book.status = data.status
+    if data.status != BookStatus.borrowed:
+        book.borrower_name = None
+        book.borrowed_at = None
+    if data.status == BookStatus.archived:
+        book.archived_at = datetime.now(timezone.utc)
+    elif data.status != BookStatus.archived:
+        book.archived_at = None
+    db.commit()
+    db.refresh(book)
+    return book
+
+
+@router.post("/{book_id}/borrow", response_model=BookResponse)
+def borrow_book(book_id: int, data: BorrowRequest, db: Session = Depends(get_db)):
+    book = db.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    book.status = BookStatus.borrowed
+    book.borrower_name = data.borrower_name
+    book.borrowed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(book)
     return book

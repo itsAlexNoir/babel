@@ -19,6 +19,8 @@
 	let original_language = $state(initial.original_language ?? '');
 	let status: BookStatus = $state(initial.status ?? 'available');
 	let notes = $state(initial.notes ?? '');
+	let translator = $state(initial.translator ?? '');
+	let tags = $state(initial.tags ?? '');
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -33,7 +35,9 @@
 			language: language || null,
 			original_language: original_language || null,
 			status,
-			notes: notes || null
+			notes: notes || null,
+			translator: translator || null,
+			tags: tags || null,
 		});
 	}
 </script>
@@ -92,6 +96,17 @@
 				<option value="borrowed">Borrowed</option>
 				<option value="archived">Archived</option>
 			</select>
+		</div>
+	</div>
+
+	<div class="form-row">
+		<div class="field">
+			<label for="translator">Translator</label>
+			<input id="translator" type="text" bind:value={translator} />
+		</div>
+		<div class="field">
+			<label for="tags">Tags</label>
+			<input id="tags" type="text" bind:value={tags} placeholder="e.g. Philosophy; Fiction" />
 		</div>
 	</div>
 

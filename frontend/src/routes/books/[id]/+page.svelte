@@ -13,6 +13,12 @@
 	let coverFile: FileList | null = $state(null);
 	let fetchingCover = $state(false);
 	let confirmDelete = $state(false);
+	let borrowing = $state(false);
+	let borrowerName = $state('');
+	let editingBorrowedAt = $state(false);
+	let editingArchivedAt = $state(false);
+	let borrowedAtValue = $state('');
+	let archivedAtValue = $state('');
 
 	const bookId = $derived(Number(page.params.id));
 
@@ -61,6 +67,18 @@
 		}
 	}
 
+	async function handleBorrow() {
+		if (!book || !borrowerName.trim()) return;
+		try {
+			book = await api.books.borrow(book.id, borrowerName.trim());
+			borrowing = false;
+			borrowerName = '';
+			toast(`Lent to ${book.borrower_name}.`, 'success');
+		} catch {
+			toast('Failed to mark as borrowed.', 'error');
+		}
+	}
+
 	async function handleCoverUpload() {
 		if (!book || !coverFile || !coverFile[0]) return;
 		try {
@@ -82,6 +100,22 @@
 			toast('Cover not found on Open Library.', 'error');
 		}
 		fetchingCover = false;
+	}
+
+	function toDateInputValue(iso: string | null): string {
+		return iso ? iso.slice(0, 10) : '';
+	}
+
+	async function handleDateUpdate(field: 'borrowed_at' | 'archived_at', value: string) {
+		if (!book) return;
+		try {
+			book = await api.books.update(book.id, { [field]: value ? value + 'T00:00:00' : null });
+			toast('Date updated.', 'success');
+		} catch {
+			toast('Failed to update date.', 'error');
+		}
+		if (field === 'borrowed_at') editingBorrowedAt = false;
+		else editingArchivedAt = false;
 	}
 
 	function getCoverUrl(b: Book | null): string | null {
@@ -188,27 +222,81 @@
 							<span class="info-value">{book.original_language}</span>
 						</div>
 					{/if}
+					{#if book.translator}
+						<div class="info-item">
+							<span class="info-label">Translator</span>
+							<span class="info-value">{book.translator}</span>
+						</div>
+					{/if}
+				<div class="info-item">
+					<span class="info-label">Entry Date</span>
+					<span class="info-value">{new Date(book.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
 				</div>
-
-				<div class="status-section">
-					<span class="info-label">Status</span>
-					<div class="status-controls">
-						<span class="badge {book.status}">{book.status}</span>
 						{#if book.status === 'available'}
-							<button class="small" onclick={() => handleStatusChange('borrowed')}>Mark Borrowed</button>
-							<button class="small" onclick={() => handleStatusChange('archived')}>Archive</button>
+							{#if borrowing}
+								<form class="borrow-form" onsubmit={(e) => { e.preventDefault(); handleBorrow(); }}>
+									<input
+										type="text"
+										placeholder="Borrower's name"
+										bind:value={borrowerName}
+										autofocus
+										required
+									/>
+									<button type="submit" class="primary small">Confirm</button>
+									<button type="button" class="small" onclick={() => { borrowing = false; borrowerName = ''; }}>Cancel</button>
+								</form>
+							{:else}
+								<button class="small" onclick={() => borrowing = true}>Mark Borrowed</button>
+								<button class="small" onclick={() => handleStatusChange('archived')}>Archive</button>
+							{/if}
 						{:else if book.status === 'borrowed'}
+							<div class="borrow-info">
+								<span class="borrow-person">{book.borrower_name ?? 'Unknown'}</span>
+								{#if editingBorrowedAt}
+									<form class="date-edit-form" onsubmit={(e) => { e.preventDefault(); handleDateUpdate('borrowed_at', borrowedAtValue); }}>
+										<input type="date" bind:value={borrowedAtValue} />
+										<button type="submit" class="primary small">Save</button>
+										<button type="button" class="small" onclick={() => editingBorrowedAt = false}>Cancel</button>
+									</form>
+								{:else if book.borrowed_at}
+									<span class="borrow-date">
+										since {new Date(book.borrowed_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+										<button class="icon-btn" type="button" onclick={() => { borrowedAtValue = toDateInputValue(book!.borrowed_at); editingBorrowedAt = true; }} title="Edit date">✎</button>
+									</span>
+								{/if}
+							</div>
 							<button class="small" onclick={() => handleStatusChange('available')}>Return</button>
 						{:else if book.status === 'archived'}
+							{#if editingArchivedAt}
+								<form class="date-edit-form" onsubmit={(e) => { e.preventDefault(); handleDateUpdate('archived_at', archivedAtValue); }}>
+									<input type="date" bind:value={archivedAtValue} />
+									<button type="submit" class="primary small">Save</button>
+									<button type="button" class="small" onclick={() => editingArchivedAt = false}>Cancel</button>
+								</form>
+							{:else if book.archived_at}
+								<span class="borrow-date">
+									since {new Date(book.archived_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+									<button class="icon-btn" type="button" onclick={() => { archivedAtValue = toDateInputValue(book!.archived_at); editingArchivedAt = true; }} title="Edit date">✎</button>
+								</span>
+							{/if}
 							<button class="small" onclick={() => handleStatusChange('available')}>Restore</button>
 						{/if}
 					</div>
-				</div>
 
 				{#if book.notes}
 					<div class="notes-section">
 						<span class="info-label">Notes</span>
 						<p class="notes-text">{book.notes}</p>
+					</div>
+				{/if}
+				{#if book.tags}
+					<div class="notes-section">
+						<span class="info-label">Tags</span>
+						<div class="tags-list">
+							{#each book.tags.split(';') as tag}
+								<span class="tag">{tag.trim()}</span>
+							{/each}
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -332,6 +420,83 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.borrow-form {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.borrow-form input {
+		font-family: inherit;
+		font-size: 0.875rem;
+		padding: 0.35rem 0.65rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		outline: none;
+		min-width: 180px;
+	}
+
+	.borrow-form input:focus {
+		border-color: var(--color-primary);
+	}
+
+	.borrow-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+
+	.borrow-person {
+		font-weight: 600;
+		font-size: 0.9rem;
+	}
+
+	.borrow-date {
+		font-size: 0.8rem;
+		color: var(--color-text-secondary);
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.icon-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		font-size: 0.85rem;
+		color: var(--color-text-secondary);
+		line-height: 1;
+		opacity: 0.5;
+		transition: opacity 0.15s;
+	}
+
+	.icon-btn:hover {
+		opacity: 1;
+	}
+
+	.date-edit-form {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
+	.date-edit-form input[type='date'] {
+		font-family: inherit;
+		font-size: 0.8rem;
+		padding: 0.25rem 0.5rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		outline: none;
+	}
+
+	.date-edit-form input[type='date']:focus {
+		border-color: var(--color-primary);
 	}
 
 	.notes-text {
@@ -339,6 +504,22 @@
 		color: var(--color-text-secondary);
 		line-height: 1.6;
 		margin-top: 0.25rem;
+	}
+
+	.tags-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.25rem;
+	}
+
+	.tag {
+		font-size: 0.75rem;
+		padding: 0.2rem 0.6rem;
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		color: var(--color-text-secondary);
 	}
 
 	.form-container {

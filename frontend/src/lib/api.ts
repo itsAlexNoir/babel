@@ -1,4 +1,4 @@
-import type { Book, BookCreate, BookStats, BookStatus, BookUpdate, ImportResult, OCRResult } from './types';
+import type { Book, BookCreate, BookStats, BookStatus, BookUpdate, ImportResult, LibraryStats, OCRResult } from './types';
 
 const BASE = '';
 
@@ -42,6 +42,12 @@ export const api = {
 				body: JSON.stringify({ status })
 			});
 		},
+		borrow(id: number, borrowerName: string): Promise<Book> {
+			return request(`/api/books/${id}/borrow`, {
+				method: 'POST',
+				body: JSON.stringify({ borrower_name: borrowerName })
+			});
+		},
 		async uploadCover(id: number, file: File): Promise<Book> {
 			const form = new FormData();
 			form.append('file', file);
@@ -57,6 +63,9 @@ export const api = {
 		},
 		stats(): Promise<BookStats> {
 			return request('/api/books/stats');
+		},
+		libraryStats(): Promise<LibraryStats> {
+			return request('/api/books/library-stats');
 		}
 	},
 	borrowed: {

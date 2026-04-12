@@ -14,6 +14,11 @@ export interface Book {
 	cover_image_path: string | null;
 	status: BookStatus;
 	notes: string | null;
+	translator: string | null;
+	tags: string | null;
+	borrower_name: string | null;
+	borrowed_at: string | null;
+	archived_at: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -30,6 +35,8 @@ export interface BookCreate {
 	original_language?: string | null;
 	status?: BookStatus;
 	notes?: string | null;
+	translator?: string | null;
+	tags?: string | null;
 }
 
 export interface BookUpdate {
@@ -44,6 +51,10 @@ export interface BookUpdate {
 	original_language?: string | null;
 	status?: BookStatus | null;
 	notes?: string | null;
+	translator?: string | null;
+	tags?: string | null;
+	borrowed_at?: string | null;
+	archived_at?: string | null;
 }
 
 export interface OCRResult {
@@ -62,6 +73,22 @@ export interface BookStats {
 	available: number;
 	borrowed: number;
 	archived: number;
+}
+
+export interface CountItem {
+	name: string;
+	count: number;
+}
+
+export interface LibraryStats {
+	total: number;
+	available: number;
+	borrowed: number;
+	archived: number;
+	top_authors: CountItem[];
+	top_publishers: CountItem[];
+	languages: CountItem[];
+	books_by_decade: CountItem[];
 }
 
 export interface ImportResult {

@@ -26,10 +26,15 @@
 		<h3 class="title">{book.title}</h3>
 		<p class="author">{book.author}</p>
 		<span class="badge {book.status}">{book.status}</span>
+		{#if book.status === 'borrowed' && book.borrower_name}
+			<p class="borrower">→ {book.borrower_name}</p>
+		{/if}
 	</div>
 	{#if showActions && onAction}
 		<div class="actions">
-			{#if book.status === 'borrowed'}
+			{#if book.status === 'available'}
+				<button class="small" onclick={(e) => { e.preventDefault(); onAction('borrow', book); }}>Borrow</button>
+			{:else if book.status === 'borrowed'}
 				<button class="small" onclick={(e) => { e.preventDefault(); onAction('return', book); }}>Return</button>
 			{:else if book.status === 'archived'}
 				<button class="small" onclick={(e) => { e.preventDefault(); onAction('restore', book); }}>Restore</button>
@@ -95,6 +100,13 @@
 	.author {
 		font-size: 0.8rem;
 		color: var(--color-text-secondary);
+	}
+
+	.borrower {
+		font-size: 0.75rem;
+		color: var(--color-warning);
+		font-style: italic;
+		margin-top: 0.1rem;
 	}
 
 	.actions {

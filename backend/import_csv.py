@@ -30,15 +30,6 @@ def clean(value: str) -> str | None:
     return v if v else None
 
 
-def build_notes(translator: str | None, tags: str | None) -> str | None:
-    parts = []
-    if translator:
-        parts.append(f"Translator: {translator}")
-    if tags:
-        parts.append(f"Tags: {tags}")
-    return "\n".join(parts) if parts else None
-
-
 def book_exists_in_db(
     db,
     title: str,
@@ -97,7 +88,7 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
                 row = {k: v.strip() for k, v in row.items()}
 
                 title = clean(row.get("título", ""))
-                author = clean(row.get("autor/a", ""))
+                author = clean(row.get("autor/a", "")) or "AA.VV."
 
                 if not title:
                     print(f"  [LINE {line_num}] SKIP — missing title: {row}")
@@ -129,10 +120,8 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
                 if original_title and original_title.lower() == title.lower():
                     original_title = None
 
-                notes = build_notes(
-                    clean(row.get("traductor/a", "")),
-                    clean(row.get("etiquetas", "")),
-                )
+                translator = clean(row.get("traductor/a", ""))
+                tags = clean(row.get("etiquetas", ""))
 
                 book = Book(
                     title=title,
@@ -142,7 +131,8 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
                     publishing_date=publishing_date,
                     edition_date=edition_date,
                     language=language,
-                    notes=notes,
+                    translator=translator,
+                    tags=tags,
                     status=BookStatus.available,
                 )
 
@@ -152,7 +142,8 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
                 else:
                     try:
                         db.add(book)
-                        db.flush()  # catch constraint errors early
+                        db.commit()
+                        db.refresh(book)
                         seen_this_run.add(key)
                         print(f"  [LINE {line_num}] ADDED — '{title}' by {author}")
                         added += 1
@@ -161,9 +152,6 @@ def import_csv(csv_path: Path, dry_run: bool = False) -> None:
                         print(f"  [LINE {line_num}] ERROR — '{title}' by {author}: {exc}")
                         errors += 1
                         continue
-
-        if not dry_run:
-            db.commit()
 
     except FileNotFoundError:
         print(f"ERROR: File not found: {csv_path}", file=sys.stderr)

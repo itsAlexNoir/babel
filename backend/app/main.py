@@ -5,10 +5,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .database import Base, engine
+from .database import Base, engine, migrate
 from .routers import archived, books, borrowed, data, ocr
 
 Base.metadata.create_all(bind=engine)
+migrate()
 
 app = FastAPI(title="Babel", description="Library Catalogue Manager API")
 
