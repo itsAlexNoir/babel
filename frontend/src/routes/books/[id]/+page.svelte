@@ -346,7 +346,7 @@
 	.cover-placeholder {
 		width: 100%;
 		aspect-ratio: 2 / 3;
-		background: #f3f4f6;
+		background: var(--color-bg);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		display: flex;
@@ -354,7 +354,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		color: #d1d5db;
+		color: var(--color-border);
 		font-size: 0.8rem;
 	}
 

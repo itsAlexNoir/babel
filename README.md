@@ -55,7 +55,7 @@ docker compose up --build
 - **Frontend:** <http://localhost:3000>
 - **Backend API docs:** <http://localhost:8000/docs>
 
-Data (SQLite DB and cover images) persists in `./data/`.
+Data (SQLite DB and cover images) persists in `./data_library/`.
 
 To stop:
 

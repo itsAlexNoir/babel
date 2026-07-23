@@ -1,5 +1,6 @@
 # Data
-data/
+data_library/
+/data/
 
 # Python
 __pycache__/
@@ -22,6 +23,4 @@ frontend/package.json
 # OS
 .DS_Store
 
-# uv
-uv.lock
 

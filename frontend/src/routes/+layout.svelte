@@ -59,6 +59,7 @@
 		width: 220px;
 		background: var(--color-surface);
 		border-right: 1px solid var(--color-border);
+		box-shadow: 1px 0 0 rgba(74, 53, 35, 0.03);
 		padding: 1.5rem 1rem;
 		display: flex;
 		flex-direction: column;
@@ -83,8 +84,10 @@
 	}
 
 	.logo-text {
-		font-size: 1.25rem;
-		font-weight: 600;
+		font-family: var(--font-display);
+		font-size: 1.35rem;
+		font-weight: 700;
+		color: var(--color-primary);
 	}
 
 	.nav-links {
@@ -99,6 +102,7 @@
 		gap: 0.75rem;
 		padding: 0.6rem 0.75rem;
 		border-radius: var(--radius);
+		border-left: 3px solid transparent;
 		color: var(--color-text-secondary);
 		text-decoration: none;
 		font-size: 0.9rem;
@@ -108,6 +112,7 @@
 
 	.nav-link:hover {
 		background: var(--color-bg);
+		border-left-color: var(--color-primary);
 		color: var(--color-text);
 		text-decoration: none;
 	}

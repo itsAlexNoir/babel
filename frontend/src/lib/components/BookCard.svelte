@@ -64,7 +64,7 @@
 	.cover {
 		aspect-ratio: 2 / 3;
 		overflow: hidden;
-		background: #f3f4f6;
+		background: var(--color-bg);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -77,7 +77,7 @@
 	}
 
 	.placeholder {
-		color: #d1d5db;
+		color: var(--color-border);
 	}
 
 	.info {

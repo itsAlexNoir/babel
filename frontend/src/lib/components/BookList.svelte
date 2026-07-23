@@ -339,11 +339,11 @@
 	.thumb-placeholder {
 		width: 100%;
 		height: 100%;
-		background: #f3f4f6;
+		background: var(--color-bg);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #d1d5db;
+		color: var(--color-border);
 	}
 
 	.title-link {

@@ -8,8 +8,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/db:/app/data
-      - ./data/uploads:/app/uploads
+      - ./data_library/db:/app/data
+      - ./data_library/uploads:/app/uploads
     environment:
       - BABEL_DATA_DIR=/app/data
       - BABEL_UPLOAD_DIR=/app/uploads

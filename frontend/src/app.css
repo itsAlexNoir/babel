@@ -1,26 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap');
 
 :root {
-	--color-bg: #fafafa;
-	--color-surface: #ffffff;
-	--color-border: #e5e7eb;
-	--color-text: #1f2937;
-	--color-text-secondary: #6b7280;
-	--color-primary: #2563eb;
-	--color-primary-hover: #1d4ed8;
-	--color-danger: #dc2626;
-	--color-danger-hover: #b91c1c;
-	--color-success: #16a34a;
-	--color-warning: #d97706;
-	--color-badge-available: #dcfce7;
-	--color-badge-available-text: #166534;
-	--color-badge-borrowed: #fef3c7;
-	--color-badge-borrowed-text: #92400e;
-	--color-badge-archived: #f3f4f6;
-	--color-badge-archived-text: #374151;
-	--radius: 8px;
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-	--shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+	--font-display: 'Playfair Display', Georgia, serif;
+	--font-body: 'Work Sans', system-ui, -apple-system, sans-serif;
+
+	--color-bg: #f3e9d3;
+	--color-surface: #fbf5e7;
+	--color-border: #d9c7a3;
+	--color-text: #3a2f28;
+	--color-text-secondary: #7c6a55;
+	--color-primary: #c1614f;
+	--color-primary-hover: #a54634;
+	--color-accent: #3f8384;
+	--color-danger: #b5473a;
+	--color-danger-hover: #963528;
+	--color-success: #5a8a6f;
+	--color-warning: #cc9544;
+	--color-badge-available: #d7e3cf;
+	--color-badge-available-text: #3c5a3f;
+	--color-badge-borrowed: #f0dcb0;
+	--color-badge-borrowed-text: #7a5a1e;
+	--color-badge-archived: #e5dcc8;
+	--color-badge-archived-text: #5c4f3c;
+	--gradient-sunset: linear-gradient(135deg, #c1614f, #cc9544);
+	--radius: 6px;
+	--shadow-sm: 0 1px 2px rgba(74, 53, 35, 0.08);
+	--shadow: 0 1px 3px rgba(74, 53, 35, 0.14), 0 1px 2px rgba(74, 53, 35, 0.08);
 }
 
 * {
@@ -31,14 +36,22 @@
 
 html, body {
 	height: 100%;
-	font-family: 'Inter', system-ui, -apple-system, sans-serif;
-	background: var(--color-bg);
+	font-family: var(--font-body);
+	background:
+		radial-gradient(ellipse at top left, rgba(193, 97, 79, 0.05), transparent 60%),
+		radial-gradient(ellipse at bottom right, rgba(63, 131, 132, 0.05), transparent 60%),
+		var(--color-bg);
 	color: var(--color-text);
 	line-height: 1.5;
 }
 
+h1, h2, h3 {
+	font-family: var(--font-display);
+	font-weight: 600;
+}
+
 a {
-	color: var(--color-primary);
+	color: var(--color-accent);
 	text-decoration: none;
 }
 
@@ -103,7 +116,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
 	outline: none;
 	border-color: var(--color-primary);
-	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+	box-shadow: 0 0 0 3px rgba(193, 97, 79, 0.15);
 }
 
 textarea {

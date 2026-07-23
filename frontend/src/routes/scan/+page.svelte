@@ -114,8 +114,8 @@
 	}
 
 	.tip {
-		background: #fffbeb;
-		border: 1px solid #fde68a;
+		background: var(--color-badge-borrowed);
+		border: 1px solid var(--color-warning);
 		border-radius: var(--radius);
 		padding: 0.75rem 1rem;
 		font-size: 0.85rem;

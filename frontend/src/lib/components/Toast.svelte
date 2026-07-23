@@ -33,21 +33,21 @@
 	}
 
 	.toast.success {
-		background: #dcfce7;
-		color: #166534;
-		border: 1px solid #bbf7d0;
+		background: var(--color-badge-available);
+		color: var(--color-badge-available-text);
+		border: 1px solid var(--color-success);
 	}
 
 	.toast.error {
-		background: #fef2f2;
-		color: #991b1b;
-		border: 1px solid #fecaca;
+		background: #f1ddd7;
+		color: var(--color-danger);
+		border: 1px solid var(--color-danger);
 	}
 
 	.toast.info {
-		background: #eff6ff;
-		color: #1e40af;
-		border: 1px solid #bfdbfe;
+		background: #dbe9e9;
+		color: var(--color-accent);
+		border: 1px solid var(--color-accent);
 	}
 
 	@keyframes slide-in {
