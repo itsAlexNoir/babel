@@ -12,6 +12,8 @@ backend/app/uploads/
 frontend/node_modules/
 frontend/build/
 frontend/.svelte-kit/
+frontend/package-lock.json
+frontend/package.json
 
 # IDE
 .vscode/
@@ -22,3 +24,4 @@ frontend/.svelte-kit/
 
 # uv
 uv.lock
+
