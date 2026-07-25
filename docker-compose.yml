@@ -6,7 +6,7 @@ services:
         - linux/arm64
     platform: linux/arm64
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./data_library/db:/app/data
       - ./data_library/uploads:/app/uploads
@@ -22,10 +22,10 @@ services:
         - linux/arm64
     platform: linux/arm64
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
       - API_URL=http://backend:8000
-      - ORIGIN=http://localhost:3000
+      - ORIGIN=http://localhost:${FRONTEND_PORT:-3000}
     depends_on:
       - backend
     restart: unless-stopped

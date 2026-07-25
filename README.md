@@ -55,6 +55,12 @@ docker compose up --build
 - **Frontend:** <http://localhost:3000>
 - **Backend API docs:** <http://localhost:8000/docs>
 
+To use different host ports, copy `.env.example` to `.env` and set `FRONTEND_PORT` / `BACKEND_PORT`, or pass them inline:
+
+```bash
+FRONTEND_PORT=4000 BACKEND_PORT=9000 docker compose up --build
+```
+
 Data (SQLite DB and cover images) persists in `./data_library/`.
 
 To stop:
