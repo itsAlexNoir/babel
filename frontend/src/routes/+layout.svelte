@@ -1,9 +1,28 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import '../app.css';
 	import { page } from '$app/state';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
+
+	// null = follow the OS setting (app.css's prefers-color-scheme block).
+	// An explicit choice is persisted and wins over the OS setting either way.
+	let theme = $state<'light' | 'dark' | null>(null);
+
+	onMount(() => {
+		const stored = localStorage.getItem('babel-theme');
+		theme = stored === 'light' || stored === 'dark' ? stored : null;
+	});
+
+	function toggleTheme() {
+		const isDarkNow = theme
+			? theme === 'dark'
+			: window.matchMedia('(prefers-color-scheme: dark)').matches;
+		theme = isDarkNow ? 'light' : 'dark';
+		localStorage.setItem('babel-theme', theme);
+		document.documentElement.dataset.theme = theme;
+	}
 
 	// Borrowed and Archived are status facets of the Catalogue now (see /books),
 	// not separate destinations — /borrowed and /archived still work as deep links.
@@ -37,6 +56,13 @@
 				<span class="wordmark-text">Babel</span>
 				<span class="wordmark-sub">Library catalogue</span>
 			</a>
+			<button class="theme-toggle" onclick={toggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
+				{#if theme === 'dark'}
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+				{/if}
+			</button>
 		</div>
 		<div class="rule-strong"></div>
 		<nav class="tabs">
@@ -95,7 +121,7 @@
 
 	.masthead-top {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
 		padding: 22px 0 12px;
 	}
@@ -137,6 +163,25 @@
 		padding-top: 11px;
 		border-bottom: 1px solid var(--color-rule);
 		overflow-x: auto;
+	}
+
+	.theme-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex: none;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--color-faint);
+	}
+
+	.theme-toggle:hover {
+		border: none;
+		background: transparent;
+		color: var(--color-ink);
 	}
 
 	.tab {

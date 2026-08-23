@@ -662,8 +662,13 @@
 	/* Delete confirmation dialog */
 	dialog {
 		/* The global `* { margin: 0 }` reset clobbers the UA stylesheet's
-		   `margin: auto`, which is what centers a modal <dialog> — restore it. */
+		   `margin: auto`, which is what centers a modal <dialog> — restore it.
+		   The UA stylesheet also sets `color: black` on <dialog> itself (not
+		   just as a default), which blocks inheritance from body and stayed
+		   invisible in light mode since black ≈ --color-ink there — reset it
+		   explicitly or every descendant renders black text in dark mode. */
 		margin: auto;
+		color: var(--color-ink);
 		border: 1px solid var(--color-ink);
 		border-radius: var(--radius);
 		padding: 1.75rem;

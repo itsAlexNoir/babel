@@ -4,6 +4,16 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// Set the theme before first paint so there is no flash of the
+			// wrong theme. Absence of a stored preference means "follow the
+			// OS setting", handled entirely by the prefers-color-scheme
+			// media query in app.css — nothing to do here in that case.
+			try {
+				var t = localStorage.getItem('babel-theme');
+				if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
