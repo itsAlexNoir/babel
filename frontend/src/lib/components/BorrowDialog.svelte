@@ -36,7 +36,7 @@
 	{#if book}
 		<form onsubmit={submit}>
 			<h2>Lend book</h2>
-			<p class="book-title">"{book.title}"</p>
+			<p class="book-title">{book.title}</p>
 			<label for="borrower">Borrower's name</label>
 			<input
 				id="borrower"
@@ -56,60 +56,44 @@
 
 <style>
 	dialog {
-		border: 1px solid var(--color-border);
+		/* The global `* { margin: 0 }` reset clobbers the UA stylesheet's
+		   `margin: auto`, which is what centers a modal <dialog> — restore it.
+		   The UA stylesheet also sets `color: black` on <dialog> itself (not
+		   just as a default), which blocks inheritance from body and stayed
+		   invisible in light mode since black ≈ --color-ink there — reset it
+		   explicitly or every descendant renders black text in dark mode. */
+		margin: auto;
+		color: var(--color-ink);
+		border: 1px solid var(--color-ink);
 		border-radius: var(--radius);
-		padding: 1.5rem;
+		padding: 1.75rem;
 		width: min(420px, 90vw);
-		box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-		background: var(--color-surface);
+		box-shadow: var(--shadow);
+		background: var(--color-paper);
 	}
 
 	dialog::backdrop {
-		background: rgba(0, 0, 0, 0.35);
+		background: rgba(22, 16, 11, 0.4);
 	}
 
 	h2 {
-		font-size: 1.1rem;
-		font-weight: 600;
-		margin-bottom: 0.25rem;
+		font-family: var(--font-serif);
+		font-size: 1.5rem;
+		margin-bottom: 0.3rem;
 	}
 
 	.book-title {
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-		margin-bottom: 1rem;
+		font-family: var(--font-serif);
 		font-style: italic;
-	}
-
-	label {
-		display: block;
-		font-size: 0.8rem;
-		font-weight: 500;
-		color: var(--color-text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		margin-bottom: 0.4rem;
-	}
-
-	input {
-		width: 100%;
-		font-family: inherit;
-		font-size: 0.875rem;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		outline: none;
-		box-sizing: border-box;
-	}
-
-	input:focus {
-		border-color: var(--color-primary);
+		font-size: 1.05rem;
+		color: var(--color-muted);
+		margin-bottom: 1.25rem;
 	}
 
 	.actions {
 		display: flex;
 		justify-content: flex-end;
 		gap: 0.5rem;
-		margin-top: 1rem;
+		margin-top: 1.25rem;
 	}
 </style>

@@ -231,7 +231,7 @@
 	.bar-fill.author { background: var(--color-primary); }
 	.bar-fill.publisher { background: var(--color-success); }
 	.bar-fill.language { background: var(--color-warning); }
-	.bar-fill.decade { background: var(--gradient-sunset); }
+	.bar-fill.decade { background: var(--color-spot); }
 
 	.bar-count {
 		width: 32px;

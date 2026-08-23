@@ -15,33 +15,33 @@
 </script>
 
 <div class="home">
-	<h1>📚 Babel</h1>
-	<p class="subtitle">Library Catalogue Manager</p>
+	<p class="eyebrow">Library catalogue</p>
+	<h1>A record of every book<br />that has passed through here.</h1>
 
 	{#if stats}
 		<div class="stats">
-			<a href="/books" class="stat-card">
-				<span class="stat-number">{stats.total}</span>
-				<span class="stat-label">Total Books</span>
+			<a href="/books" class="stat">
+				<span class="num">{stats.total}</span>
+				<span class="lbl">Total books</span>
 			</a>
-			<a href="/books" class="stat-card">
-				<span class="stat-number">{stats.available}</span>
-				<span class="stat-label">Available</span>
+			<a href="/books?status=available" class="stat">
+				<span class="num">{stats.available}</span>
+				<span class="lbl">On shelf</span>
 			</a>
-			<a href="/borrowed" class="stat-card">
-				<span class="stat-number">{stats.borrowed}</span>
-				<span class="stat-label">Borrowed</span>
+			<a href="/books?status=borrowed" class="stat">
+				<span class="num">{stats.borrowed}</span>
+				<span class="lbl">On loan</span>
 			</a>
-			<a href="/archived" class="stat-card">
-				<span class="stat-number">{stats.archived}</span>
-				<span class="stat-label">Archived</span>
+			<a href="/books?status=archived" class="stat">
+				<span class="num">{stats.archived}</span>
+				<span class="lbl">Archived</span>
 			</a>
 		</div>
 	{/if}
 
 	<div class="actions">
-		<a href="/books/new"><button class="primary">Add a Book</button></a>
-		<a href="/scan"><button>Scan a Book</button></a>
+		<a href="/books/new"><button class="primary">Add a book</button></a>
+		<a href="/scan"><button>Scan a book</button></a>
 	</div>
 </div>
 
@@ -50,67 +50,68 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 4rem 2rem;
 		text-align: center;
+		padding: 5rem 1rem 3rem;
 	}
 
 	h1 {
-		font-size: 2.5rem;
-		font-weight: 600;
-	}
-
-	.subtitle {
-		color: var(--color-text-secondary);
-		margin-top: 0.5rem;
-		font-size: 1.1rem;
+		font-size: 2.6rem;
+		line-height: 1.15;
+		max-width: 18ch;
+		margin-top: 0.6rem;
 	}
 
 	.stats {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 1rem;
-		margin-top: 2.5rem;
-		width: 100%;
-		max-width: 600px;
+		display: flex;
+		gap: 44px;
+		margin-top: 3rem;
+		padding-top: 1.75rem;
+		border-top: 1.5px solid var(--color-ink);
 	}
 
-	.stat-card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		padding: 1.25rem;
+	.stat {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 3px;
 		text-decoration: none;
 		color: inherit;
-		transition: box-shadow 0.15s ease;
 	}
 
-	.stat-card:hover {
-		box-shadow: var(--shadow);
+	.stat:hover {
 		text-decoration: none;
 	}
 
-	.stat-number {
-		font-size: 1.75rem;
-		font-weight: 600;
+	.stat:hover .num {
+		color: var(--color-spot);
 	}
 
-	.stat-label {
-		font-size: 0.8rem;
-		color: var(--color-text-secondary);
+	.num {
+		font-family: var(--font-serif);
+		font-size: 2.1rem;
+		line-height: 1;
+		color: var(--color-ink);
+		transition: color 0.12s ease;
+	}
+
+	.lbl {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--color-faint);
 	}
 
 	.actions {
 		display: flex;
 		gap: 0.75rem;
-		margin-top: 2rem;
+		margin-top: 2.5rem;
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 560px) {
 		.stats {
-			grid-template-columns: repeat(2, 1fr);
+			gap: 26px;
+			flex-wrap: wrap;
+			justify-content: center;
 		}
 	}
 </style>

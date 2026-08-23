@@ -15,7 +15,9 @@ export const toasts = writable<ToastMessage[]>([]);
 export function toast(message: string, type: ToastType = 'info', duration = 3000) {
 	const id = nextId++;
 	toasts.update((t) => [...t, { id, message, type }]);
-	setTimeout(() => {
-		toasts.update((t) => t.filter((m) => m.id !== id));
-	}, duration);
+	setTimeout(() => dismissToast(id), duration);
+}
+
+export function dismissToast(id: number) {
+	toasts.update((t) => t.filter((m) => m.id !== id));
 }

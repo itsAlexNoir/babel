@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { BookCreate, BookStatus } from '$lib/types';
+	import TagInput from './TagInput.svelte';
 
 	let { initial = {}, submitLabel = 'Save', onSubmit, onCancel }: {
 		initial?: Partial<BookCreate>;
@@ -106,7 +107,7 @@
 		</div>
 		<div class="field">
 			<label for="tags">Tags</label>
-			<input id="tags" type="text" bind:value={tags} placeholder="e.g. Philosophy; Fiction" />
+			<TagInput id="tags" bind:value={tags} placeholder="e.g. Philosophy, Fiction…" />
 		</div>
 	</div>
 

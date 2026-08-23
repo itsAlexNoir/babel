@@ -1,28 +1,49 @@
 <script lang="ts">
 	import type { Book } from '$lib/types';
 	import BookCard from './BookCard.svelte';
+	import BookCover from './BookCover.svelte';
 
 	type SortKey = 'title' | 'author' | 'publisher' | 'year' | 'added';
 	type SortDir = 'asc' | 'desc';
 
-	let { books, emptyMessage = 'No books found.', showActions = false, onAction, viewMode = 'grid' }: {
+	let {
+		books,
+		viewMode = 'grid',
+		showActions = false,
+		onAction,
+		onTagClick,
+		sortKey = $bindable('added'),
+		sortDir = $bindable('desc'),
+		page = $bindable(1),
+		pageSize = 40,
+		emptyTitle = 'No books found.',
+		emptyBody = '',
+		emptyActionLabel,
+		onEmptyAction,
+	}: {
 		books: Book[];
-		emptyMessage?: string;
+		viewMode?: 'grid' | 'list';
 		showActions?: boolean;
 		onAction?: (action: string, book: Book) => void;
-		viewMode?: 'grid' | 'list';
+		onTagClick?: (tag: string) => void;
+		sortKey?: SortKey;
+		sortDir?: SortDir;
+		page?: number;
+		pageSize?: number;
+		emptyTitle?: string;
+		emptyBody?: string;
+		emptyActionLabel?: string;
+		onEmptyAction?: () => void;
 	} = $props();
-
-	let sortKey = $state<SortKey>('added');
-	let sortDir = $state<SortDir>('desc');
 
 	const SORT_LABELS: Record<SortKey, string> = {
 		title: 'Title',
 		author: 'Author',
 		publisher: 'Publisher',
 		year: 'Year',
-		added: 'Recently Added',
+		added: 'Recently added',
 	};
+	const SORT_KEYS: SortKey[] = ['added', 'title', 'author', 'publisher', 'year'];
 
 	function toggleSort(key: SortKey) {
 		if (sortKey === key) {
@@ -31,6 +52,7 @@
 			sortKey = key;
 			sortDir = key === 'added' ? 'desc' : 'asc';
 		}
+		page = 1;
 	}
 
 	function bookYear(book: Book): number {
@@ -38,360 +60,400 @@
 		return y ? parseInt(y.slice(0, 4)) || 0 : 0;
 	}
 
+	function bookTags(book: Book): string[] {
+		return book.tags ? book.tags.split(';').map((t) => t.trim()).filter(Boolean) : [];
+	}
+
 	const sortedBooks = $derived.by(() => {
 		return [...books].sort((a, b) => {
 			let cmp = 0;
-			if (sortKey === 'title') {
-				cmp = a.title.localeCompare(b.title);
-			} else if (sortKey === 'author') {
-				cmp = a.author.localeCompare(b.author);
-			} else if (sortKey === 'publisher') {
-				cmp = (a.publisher ?? '').localeCompare(b.publisher ?? '');
-			} else if (sortKey === 'year') {
-				cmp = bookYear(a) - bookYear(b);
-			} else if (sortKey === 'added') {
-				cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-			}
+			if (sortKey === 'title') cmp = a.title.localeCompare(b.title);
+			else if (sortKey === 'author') cmp = a.author.localeCompare(b.author);
+			else if (sortKey === 'publisher') cmp = (a.publisher ?? '').localeCompare(b.publisher ?? '');
+			else if (sortKey === 'year') cmp = bookYear(a) - bookYear(b);
+			else if (sortKey === 'added') cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 			return sortDir === 'asc' ? cmp : -cmp;
 		});
 	});
 
-	const coverUrl = (book: Book) =>
-		book.cover_image_path ? `/uploads/${book.cover_image_path}` : null;
+	const pageCount = $derived(Math.max(1, Math.ceil(sortedBooks.length / pageSize)));
+	const safePage = $derived(Math.min(Math.max(page, 1), pageCount));
+	const pageBooks = $derived(sortedBooks.slice((safePage - 1) * pageSize, safePage * pageSize));
+	const rangeStart = $derived(sortedBooks.length === 0 ? 0 : (safePage - 1) * pageSize + 1);
+	const rangeEnd = $derived(Math.min(safePage * pageSize, sortedBooks.length));
 
-	const year = (book: Book) =>
-		book.publishing_date ?? book.original_pub_date ?? book.edition_date ?? null;
+	const year = (book: Book) => book.publishing_date ?? book.original_pub_date ?? book.edition_date ?? null;
+
+	const COLS = '32px minmax(0,1.3fr) minmax(150px,1fr) 120px 56px 120px 76px';
 </script>
 
 {#if books.length === 0}
 	<div class="empty">
-		<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
-		<p>{emptyMessage}</p>
-	</div>
-{:else if viewMode === 'grid'}
-	<div class="sort-bar">
-		<span class="sort-label">Sort:</span>
-		{#each Object.entries(SORT_LABELS) as [key, label]}
-			<button
-				class="sort-btn"
-				class:active={sortKey === key}
-				onclick={() => toggleSort(key as SortKey)}
-			>
-				{label}
-				{#if sortKey === key}
-					<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>
-				{/if}
-			</button>
-		{/each}
-	</div>
-	<div class="grid">
-		{#each sortedBooks as book (book.id)}
-			<BookCard {book} {showActions} {onAction} />
-		{/each}
+		<h3>{emptyTitle}</h3>
+		{#if emptyBody}<p>{emptyBody}</p>{/if}
+		{#if emptyActionLabel && onEmptyAction}
+			<button class="small" onclick={onEmptyAction}>{emptyActionLabel}</button>
+		{/if}
 	</div>
 {:else}
-	<div class="list-container">
-		<table class="list-table">
-			<thead>
-				<tr>
-					<th class="col-cover"></th>
-					<th class="col-title">
-						<button class="col-sort-btn" class:active={sortKey === 'title'} onclick={() => toggleSort('title')}>
-							Title {#if sortKey === 'title'}<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
-						</button>
-					</th>
-					<th class="col-author">
-						<button class="col-sort-btn" class:active={sortKey === 'author'} onclick={() => toggleSort('author')}>
-							Author {#if sortKey === 'author'}<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
-						</button>
-					</th>
-					<th class="col-publisher">
-						<button class="col-sort-btn" class:active={sortKey === 'publisher'} onclick={() => toggleSort('publisher')}>
-							Publisher {#if sortKey === 'publisher'}<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
-						</button>
-					</th>
-					<th class="col-year">
-						<button class="col-sort-btn" class:active={sortKey === 'year'} onclick={() => toggleSort('year')}>
-							Year {#if sortKey === 'year'}<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
-						</button>
-					</th>
-					<th class="col-language">Language</th>
-					<th class="col-borrower">Borrower</th>
-					<th class="col-added">Added</th>
-					<th class="col-status">Status</th>
-					{#if showActions}
-						<th class="col-actions"></th>
-					{/if}
-				</tr>
-			</thead>
-			<tbody>
-				{#each sortedBooks as book (book.id)}
-					<tr class="list-row" onclick={() => window.location.href = `/books/${book.id}`}>
-						<td class="col-cover">
-							<div class="thumb">
-								{#if coverUrl(book)}
-									<img src={coverUrl(book)} alt="{book.title} cover" />
-								{:else}
-									<div class="thumb-placeholder">
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
-									</div>
-								{/if}
-							</div>
-						</td>
-						<td class="col-title">
-							<a href="/books/{book.id}" class="title-link">{book.title}</a>
-							{#if book.original_title}
-								<span class="original-title">{book.original_title}</span>
-							{/if}
-							{#if book.tags}
-								<div class="row-tags">
-									{#each book.tags.split(';') as tag}
-										<span class="row-tag">{tag.trim()}</span>
-									{/each}
-								</div>
-							{/if}
-						</td>
-						<td class="col-author">
+	{#if viewMode === 'grid'}
+		<div class="sort-row">
+			<span class="eyebrow">Sort</span>
+			{#each SORT_KEYS as key}
+				<button class="sort-link" class:on={sortKey === key} onclick={() => toggleSort(key)}>
+					{SORT_LABELS[key]}
+					{#if sortKey === key}<span class="arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
+				</button>
+			{/each}
+		</div>
+		<div class="grid">
+			{#each pageBooks as book (book.id)}
+				<BookCard {book} {showActions} {onAction} />
+			{/each}
+		</div>
+	{:else}
+		<div class="list">
+			<div class="row head" style:grid-template-columns={COLS}>
+				<span></span>
+				<button class="col-sort" class:on={sortKey === 'title'} onclick={() => toggleSort('title')}>
+					Title / Author {#if sortKey === 'title' || sortKey === 'author'}<span class="arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
+				</button>
+				<span class="eyebrow">Tags</span>
+				<button class="col-sort" class:on={sortKey === 'publisher'} onclick={() => toggleSort('publisher')}>
+					Publisher {#if sortKey === 'publisher'}<span class="arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
+				</button>
+				<button class="col-sort" class:on={sortKey === 'year'} onclick={() => toggleSort('year')}>
+					Year {#if sortKey === 'year'}<span class="arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
+				</button>
+				<span class="eyebrow">Status</span>
+				<span></span>
+			</div>
+			{#each pageBooks as book (book.id)}
+				<div class="row" style:grid-template-columns={COLS}>
+					<div class="col-cover"><BookCover {book} size="s" /></div>
+					<a href="/books/{book.id}" class="row-link">
+						<div class="row-title">{book.title}</div>
+						<div class="row-author">
 							{book.author}
-							{#if book.translator}
-								<span class="original-title">tr. {book.translator}</span>
+							{#if book.original_title}<span class="dim"> · {book.original_title}</span>{/if}
+						</div>
+					</a>
+					<div class="col-tags">
+						{#each bookTags(book) as tag}
+							{#if onTagClick}
+								<button class="tag" onclick={() => onTagClick(tag)}>{tag}</button>
+							{:else}
+								<span class="tag">{tag}</span>
 							{/if}
-						</td>
-					<td class="col-publisher">{book.publisher ?? '—'}</td>
-					<td class="col-year">{year(book) ?? '—'}</td>
-					<td class="col-language">{book.language ?? '—'}</td>
-					<td class="col-borrower">
-						{#if book.borrower_name}
-							<span class="borrower-name">{book.borrower_name}</span>
-							{#if book.borrowed_at}
-								<span class="original-title">{new Date(book.borrowed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-							{/if}
-						{:else if book.archived_at}
-							<span class="original-title">archived {new Date(book.archived_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+						{/each}
+					</div>
+					<span class="col-publisher">{book.publisher ?? '—'}</span>
+					<span class="col-year mono">{year(book) ?? '—'}</span>
+					<span class="col-status">
+						{#if book.status === 'available'}
+							<span class="stat avail"><span class="dot"></span>On shelf</span>
+						{:else if book.status === 'borrowed'}
+							<span class="stat out"><span class="dot"></span>{book.borrower_name}</span>
 						{:else}
-							—
+							<span class="stat arch">Archived</span>
 						{/if}
-					</td>
-					<td class="col-added">{new Date(book.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-					<td class="col-status">
-						<span class="badge {book.status}">{book.status}</span>
-					</td>
-					{#if showActions && onAction}
-						<td class="col-actions" onclick={(e) => e.stopPropagation()}>
+					</span>
+					<span class="col-actions">
+						{#if showActions && onAction}
 							{#if book.status === 'available'}
-								<button class="small" onclick={() => onAction('borrow', book)}>Borrow</button>
+								<button class="small quiet" onclick={() => onAction('borrow', book)}>Lend</button>
 							{:else if book.status === 'borrowed'}
-								<button class="small" onclick={() => onAction('return', book)}>Return</button>
-							{:else if book.status === 'archived'}
-								<button class="small" onclick={() => onAction('restore', book)}>Restore</button>
+								<button class="small quiet" onclick={() => onAction('return', book)}>Return</button>
+							{:else}
+								<button class="small quiet" onclick={() => onAction('restore', book)}>Restore</button>
 							{/if}
-						</td>
-					{/if}
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+						{/if}
+					</span>
+				</div>
+			{/each}
+		</div>
+	{/if}
+
+	<div class="pagination">
+		<span class="range">Rows <span class="mono">{rangeStart}–{rangeEnd}</span> of <span class="mono">{sortedBooks.length}</span></span>
+		<div class="pager">
+			<button class="quiet-btn" disabled={safePage <= 1} onclick={() => (page = safePage - 1)}>← Previous</button>
+			<span class="mono page-indicator">{safePage} / {pageCount}</span>
+			<button class="quiet-btn" disabled={safePage >= pageCount} onclick={() => (page = safePage + 1)}>Next →</button>
+		</div>
 	</div>
 {/if}
 
 <style>
-	/* Sort bar (grid view) */
-	.sort-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		margin-bottom: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.sort-label {
-		font-size: 0.8rem;
-		color: var(--color-text-secondary);
-		margin-right: 0.25rem;
-	}
-
-	.sort-btn {
-		font-size: 0.8rem;
-		padding: 0.25rem 0.6rem;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
-		background: var(--color-surface);
-		color: var(--color-text-secondary);
-		cursor: pointer;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.2rem;
-	}
-
-	.sort-btn:hover {
-		background: var(--color-bg);
-		color: var(--color-text);
-	}
-
-	.sort-btn.active {
-		background: var(--color-primary);
-		border-color: var(--color-primary);
-		color: white;
-	}
-
-	.sort-arrow {
-		font-size: 0.75rem;
-	}
-
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-		gap: 1.25rem;
-	}
-
 	.empty {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
-		padding: 4rem 2rem;
-		color: var(--color-text-secondary);
+		text-align: center;
+		gap: 9px;
+		padding: 4rem 1rem;
+		border-top: 1px solid var(--color-ink);
+		border-bottom: 1px solid var(--color-rule-faint);
+	}
+
+	.empty h3 {
+		font-size: 20px;
 	}
 
 	.empty p {
-		font-size: 0.9rem;
+		font-size: 12px;
+		color: var(--color-muted);
+		max-width: 34ch;
+		line-height: 1.55;
 	}
 
-	/* List view */
-	.list-container {
-		overflow-x: auto;
+	/* Grid sort row */
+	.sort-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin-bottom: 1.1rem;
+		flex-wrap: wrap;
 	}
 
-	.list-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.875rem;
+	.sort-link {
+		border: none;
+		background: transparent;
+		padding: 0;
+		height: auto;
+		font-size: 12px;
+		color: var(--color-muted);
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
 	}
 
-	.list-table thead th {
-		text-align: left;
-		font-size: 0.75rem;
+	.sort-link:hover {
+		border: none;
+		background: transparent;
+		color: var(--color-ink);
+	}
+
+	.sort-link.on {
+		color: var(--color-ink);
 		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--color-text-secondary);
-		padding: 0 0;
-		border-bottom: 1px solid var(--color-border);
-		white-space: nowrap;
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 
-	/* Sortable column header buttons */
-	.col-sort-btn {
+	.arrow {
+		font-size: 10px;
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+		gap: 30px 26px;
+	}
+
+	/* List */
+	.list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.row {
+		display: grid;
+		gap: 18px;
+		align-items: center;
+		padding: 13px 0;
+		border-bottom: 1px solid var(--color-rule-faint);
+		position: relative;
+	}
+
+	.row.head {
+		border-bottom: 1px solid var(--color-ink);
+		padding: 0 0 9px;
+	}
+
+	.col-sort {
 		all: unset;
 		cursor: pointer;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
-		padding: 0.5rem 0.75rem;
-		width: 100%;
-		font-size: 0.75rem;
+		gap: 4px;
+		font-size: 10px;
 		font-weight: 600;
+		letter-spacing: 0.11em;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--color-text-secondary);
-		white-space: nowrap;
-		border-radius: 4px;
+		color: var(--color-faint);
 	}
 
-	.col-sort-btn:hover {
-		color: var(--color-text);
-		background: var(--color-bg);
+	.col-sort:hover,
+	.col-sort.on {
+		color: var(--color-ink);
 	}
 
-	.col-sort-btn.active {
-		color: var(--color-primary);
-	}
-
-	.list-row {
-		cursor: pointer;
-		transition: background 0.1s ease;
-	}
-
-	.list-row:hover {
-		background: var(--color-bg);
-	}
-
-	.list-row td {
-		padding: 0.6rem 0.75rem;
-		border-bottom: 1px solid var(--color-border);
-		vertical-align: middle;
-	}
-
-	.thumb {
+	.col-cover {
 		width: 32px;
-		height: 48px;
-		border-radius: 3px;
-		overflow: hidden;
-		flex-shrink: 0;
 	}
 
-	.thumb img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
+	.row-link {
+		min-width: 0;
+		text-decoration: none;
+		color: inherit;
 	}
 
-	.thumb-placeholder {
-		width: 100%;
-		height: 100%;
-		background: var(--color-bg);
+	.row-link:hover {
+		text-decoration: none;
+	}
+
+	.row-link::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.row-title {
+		font-family: var(--font-serif);
+		font-size: 19px;
+		line-height: 1.22;
+		color: var(--color-ink);
+	}
+
+	.row-link:hover .row-title {
+		color: var(--color-spot);
+	}
+
+	.row-author {
+		font-size: 12px;
+		color: var(--color-muted);
+		margin-top: 2px;
+	}
+
+	.dim {
+		color: var(--color-faint);
+	}
+
+	.col-tags {
+		display: flex;
+		gap: 5px;
+		flex-wrap: wrap;
+		position: relative;
+		z-index: 1;
+	}
+
+	.col-tags button.tag {
+		height: 20px;
+	}
+
+	.col-publisher {
+		font-size: 12.5px;
+		color: var(--color-sub);
+	}
+
+	.col-year {
+		font-size: 12px;
+		color: var(--color-muted);
+		text-align: right;
+	}
+
+	.col-status {
+		position: relative;
+		z-index: 1;
+	}
+
+	.col-actions {
+		position: relative;
+		z-index: 1;
+		text-align: right;
+	}
+
+	.quiet {
+		border-color: transparent;
+		background: transparent;
+	}
+
+	.quiet:hover {
+		border-color: var(--color-rule);
+		background: var(--color-paper-2);
+	}
+
+	/* Pagination */
+	.pagination {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		color: var(--color-border);
+		justify-content: space-between;
+		padding: 15px 0 4px;
+		margin-top: 4px;
+		border-top: 1px solid var(--color-rule);
 	}
 
-	.title-link {
-		font-weight: 600;
-		color: var(--color-text);
-		text-decoration: none;
-		display: block;
+	.range {
+		font-size: 11.5px;
+		color: var(--color-muted);
 	}
 
-	.title-link:hover {
-		color: var(--color-primary);
-		text-decoration: none;
-	}
-
-	.original-title {
-		display: block;
-		font-size: 0.75rem;
-		color: var(--color-text-secondary);
-		font-style: italic;
-		margin-top: 1px;
-	}
-
-	.row-tags {
+	.pager {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.25rem;
-		margin-top: 0.25rem;
+		align-items: center;
+		gap: 14px;
 	}
 
-	.row-tag {
-		font-size: 0.7rem;
-		padding: 0.1rem 0.45rem;
-		background: var(--color-bg);
-		border: 1px solid var(--color-border);
-		border-radius: 999px;
-		color: var(--color-text-secondary);
-		white-space: nowrap;
+	.quiet-btn {
+		border: none;
+		background: transparent;
+		padding: 0;
+		height: auto;
+		font-size: 11.5px;
+		color: var(--color-muted);
 	}
 
-	.col-cover { width: 44px; }
-	.col-title { min-width: 180px; }
-	.col-author { min-width: 130px; white-space: nowrap; }
-	.col-publisher { min-width: 120px; color: var(--color-text-secondary); }
-	.col-year { width: 60px; color: var(--color-text-secondary); white-space: nowrap; }
-	.col-language { width: 90px; color: var(--color-text-secondary); }
-	.col-borrower { min-width: 120px; }
-	.borrower-name { font-weight: 500; color: var(--color-warning); display: block; }
-	.col-added { width: 100px; color: var(--color-text-secondary); white-space: nowrap; font-size: 0.8rem; }
-	.col-status { width: 100px; }
-	.col-actions { width: 80px; }
+	.quiet-btn:hover:not(:disabled) {
+		border: none;
+		background: transparent;
+		color: var(--color-ink);
+	}
+
+	.quiet-btn:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.page-indicator {
+		font-size: 11px;
+		color: var(--color-muted);
+	}
+
+	@media (max-width: 720px) {
+		.row.head {
+			display: none;
+		}
+
+		.row {
+			display: flex !important;
+			flex-wrap: wrap;
+			gap: 4px 10px;
+			padding: 14px 0;
+		}
+
+		.col-cover {
+			order: -1;
+		}
+
+		.row-link {
+			order: -1;
+			flex: 1 1 calc(100% - 42px);
+		}
+
+		.col-publisher,
+		.col-year {
+			font-size: 11px;
+		}
+
+		.col-tags {
+			flex-basis: 100%;
+			margin-left: 42px;
+		}
+
+		.col-status,
+		.col-actions {
+			margin-left: 42px;
+		}
+	}
 </style>

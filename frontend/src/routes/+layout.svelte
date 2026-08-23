@@ -1,165 +1,294 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import '../app.css';
+	import { page } from '$app/state';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children } = $props();
+
+	// null = follow the OS setting (app.css's prefers-color-scheme block).
+	// An explicit choice is persisted and wins over the OS setting either way.
+	let theme = $state<'light' | 'dark' | null>(null);
+
+	onMount(() => {
+		const stored = localStorage.getItem('babel-theme');
+		theme = stored === 'light' || stored === 'dark' ? stored : null;
+	});
+
+	function toggleTheme() {
+		const isDarkNow = theme
+			? theme === 'dark'
+			: window.matchMedia('(prefers-color-scheme: dark)').matches;
+		theme = isDarkNow ? 'light' : 'dark';
+		localStorage.setItem('babel-theme', theme);
+		document.documentElement.dataset.theme = theme;
+	}
+
+	// Borrowed and Archived are status facets of the Catalogue now (see /books),
+	// not separate destinations — /borrowed and /archived still work as deep links.
+	const NAV = [
+		{ href: '/books', label: 'Catalogue' },
+		{ href: '/scan', label: 'Scan' },
+		{ href: '/data', label: 'Import' },
+		{ href: '/stats', label: 'Statistics' },
+	];
+
+	const TABS = [
+		{ href: '/books', label: 'Catalogue', icon: 'books' },
+		{ href: '/scan', label: 'Scan', icon: 'scan' },
+		{ href: '/stats', label: 'Stats', icon: 'chart' },
+		{ href: '/data', label: 'Import', icon: 'data' },
+	];
+
+	function isActive(href: string): boolean {
+		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+	}
 </script>
 
 <svelte:head>
 	<title>Babel — Library Catalogue</title>
 </svelte:head>
 
-<div class="app">
-	<nav class="sidebar">
-		<a href="/" class="logo">
-			<span class="logo-icon">📚</span>
-			<span class="logo-text">Babel</span>
-		</a>
-		<div class="nav-links">
-			<a href="/books" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
-				Catalogue
+<div class="shell">
+	<header class="masthead">
+		<div class="masthead-top">
+			<a href="/" class="wordmark">
+				<span class="wordmark-text">Babel</span>
+				<span class="wordmark-sub">Library catalogue</span>
 			</a>
-			<a href="/borrowed" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-				Borrowed
-			</a>
-			<a href="/archived" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-				Archived
-			</a>
-			<a href="/scan" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/></svg>
-				Scan
-			</a>
-			<a href="/data" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
-				Data
-			</a>
-			<a href="/stats" class="nav-link">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-				Statistics
-			</a>
+			<button class="theme-toggle" onclick={toggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
+				{#if theme === 'dark'}
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+				{/if}
+			</button>
 		</div>
-	</nav>
+		<div class="rule-strong"></div>
+		<nav class="tabs">
+			{#each NAV as item}
+				<a
+					href={item.href}
+					class="tab"
+					class:on={isActive(item.href)}
+					aria-current={isActive(item.href) ? 'page' : undefined}
+				>
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+	</header>
+
 	<main class="content">
 		{@render children()}
 	</main>
+
+	<nav class="mobile-tabs" aria-label="Primary">
+		{#each TABS as item}
+			<a href={item.href} class="mobile-tab" class:on={isActive(item.href)} aria-current={isActive(item.href) ? 'page' : undefined}>
+				{#if item.icon === 'books'}
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
+				{:else if item.icon === 'scan'}
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+				{:else if item.icon === 'chart'}
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="12" width="3" height="5"/><rect x="13" y="8" width="3" height="9"/><rect x="19" y="5" width="3" height="12"/></svg>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+				{/if}
+				<span>{item.label}</span>
+			</a>
+		{/each}
+	</nav>
 </div>
 
 <Toast />
 
 <style>
-	.app {
-		display: flex;
+	.shell {
 		min-height: 100vh;
-	}
-
-	.sidebar {
-		width: 220px;
-		background: var(--color-surface);
-		border-right: 1px solid var(--color-border);
-		box-shadow: 1px 0 0 rgba(74, 53, 35, 0.03);
-		padding: 1.5rem 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
-		position: fixed;
+	}
+
+	.masthead {
+		flex: none;
+		padding: 0 56px;
+		background: var(--color-paper);
+		position: sticky;
 		top: 0;
-		left: 0;
-		bottom: 0;
 		z-index: 10;
 	}
 
-	.logo {
+	.masthead-top {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		text-decoration: none;
-		color: var(--color-text);
+		justify-content: space-between;
+		padding: 22px 0 12px;
 	}
 
-	.logo-icon {
-		font-size: 1.5rem;
-	}
-
-	.logo-text {
-		font-family: var(--font-display);
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--color-primary);
-	}
-
-	.nav-links {
+	.wordmark {
 		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
+		align-items: baseline;
+		gap: 13px;
+		text-decoration: none;
+		color: var(--color-ink);
 	}
 
-	.nav-link {
+	.wordmark:hover {
+		text-decoration: none;
+	}
+
+	.wordmark-text {
+		font-family: var(--font-serif);
+		font-size: 29px;
+		line-height: 1;
+	}
+
+	.wordmark-sub {
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 0.11em;
+		text-transform: uppercase;
+		color: var(--color-faint);
+	}
+
+	.rule-strong {
+		height: 1.5px;
+		background: var(--color-ink);
+	}
+
+	.tabs {
+		display: flex;
+		gap: 26px;
+		padding-top: 11px;
+		border-bottom: 1px solid var(--color-rule);
+		overflow-x: auto;
+	}
+
+	.theme-toggle {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.6rem 0.75rem;
-		border-radius: var(--radius);
-		border-left: 3px solid transparent;
-		color: var(--color-text-secondary);
-		text-decoration: none;
-		font-size: 0.9rem;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex: none;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--color-faint);
+	}
+
+	.theme-toggle:hover {
+		border: none;
+		background: transparent;
+		color: var(--color-ink);
+	}
+
+	.tab {
+		position: relative;
+		font-size: 13px;
 		font-weight: 500;
-		transition: all 0.15s ease;
+		color: var(--color-muted);
+		text-decoration: none;
+		padding-bottom: 10px;
+		white-space: nowrap;
 	}
 
-	.nav-link:hover {
-		background: var(--color-bg);
-		border-left-color: var(--color-primary);
-		color: var(--color-text);
+	.tab:hover {
+		color: var(--color-ink);
 		text-decoration: none;
+	}
+
+	.tab.on {
+		color: var(--color-ink);
+		font-weight: 600;
+	}
+
+	.tab.on::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 1.5px;
+		background: var(--color-ink);
 	}
 
 	.content {
 		flex: 1;
-		margin-left: 220px;
-		padding: 2rem;
-		max-width: 1200px;
+		width: 100%;
+		max-width: 1440px;
+		padding: 28px 56px 56px;
+	}
+
+	.mobile-tabs {
+		display: none;
 	}
 
 	@media (max-width: 768px) {
-		.sidebar {
-			position: fixed;
-			bottom: 0;
-			top: auto;
-			left: 0;
-			right: 0;
-			width: 100%;
-			flex-direction: row;
-			padding: 0.5rem 1rem;
-			gap: 0;
-			border-right: none;
-			border-top: 1px solid var(--color-border);
-			justify-content: center;
+		.masthead {
+			padding: 0 20px;
 		}
 
-		.logo {
+		.masthead-top {
+			padding: 16px 0 10px;
+		}
+
+		.wordmark-text {
+			font-size: 24px;
+		}
+
+		.tabs {
 			display: none;
 		}
 
-		.nav-links {
-			flex-direction: row;
-			gap: 0.5rem;
-		}
-
-		.nav-link {
-			flex-direction: column;
-			gap: 0.25rem;
-			font-size: 0.7rem;
-			padding: 0.4rem 0.75rem;
-		}
-
 		.content {
-			margin-left: 0;
-			padding: 1rem;
-			padding-bottom: 5rem;
+			padding: 18px 20px 78px;
+		}
+
+		.mobile-tabs {
+			display: flex;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			background: var(--color-paper);
+			border-top: 1px solid var(--color-rule);
+			padding: 3px 3px calc(env(safe-area-inset-bottom, 0px) + 8px);
+			z-index: 10;
+		}
+
+		.mobile-tab {
+			flex: 1;
+			min-height: 54px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 4px;
+			text-decoration: none;
+			color: var(--color-faint);
+			position: relative;
+			font-size: 10px;
+			font-weight: 500;
+		}
+
+		.mobile-tab:hover {
+			text-decoration: none;
+		}
+
+		.mobile-tab.on {
+			color: var(--color-ink);
+			font-weight: 600;
+		}
+
+		.mobile-tab.on::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			width: 24px;
+			height: 1.5px;
+			background: var(--color-ink);
 		}
 	}
 </style>

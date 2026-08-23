@@ -61,7 +61,7 @@
 
 <style>
 	.upload-area {
-		border: 2px dashed var(--color-border);
+		border: 1px dashed var(--color-rule-strong);
 		border-radius: var(--radius);
 		padding: 2rem;
 		text-align: center;
@@ -71,12 +71,13 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0.5rem;
-		color: var(--color-text-secondary);
+		color: var(--color-muted);
 	}
 
 	.upload-area:hover, .upload-area.dragging {
-		border-color: var(--color-primary);
-		background: rgba(37, 99, 235, 0.03);
+		border-color: var(--color-spot);
+		background: var(--color-tint-spot);
+		color: var(--color-ink-spot);
 	}
 
 	.upload-area p {
@@ -101,7 +102,7 @@
 		height: 80px;
 		border-radius: var(--radius);
 		overflow: hidden;
-		border: 1px solid var(--color-border);
+		border: 1px solid var(--color-rule);
 	}
 
 	.preview img {
@@ -118,8 +119,8 @@
 		height: 20px;
 		padding: 0;
 		border-radius: 50%;
-		background: rgba(0,0,0,0.6);
-		color: white;
+		background: rgba(22, 16, 11, 0.65);
+		color: var(--color-paper);
 		border: none;
 		font-size: 14px;
 		line-height: 1;

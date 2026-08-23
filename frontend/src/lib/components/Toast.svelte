@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { toasts } from '$lib/toast';
+	import { toasts, dismissToast } from '$lib/toast';
 </script>
 
 {#if $toasts.length > 0}
 	<div class="toast-container">
 		{#each $toasts as t (t.id)}
 			<div class="toast {t.type}">
-				{t.message}
+				<span>{t.message}</span>
+				<button class="dismiss" onclick={() => dismissToast(t.id)} aria-label="Dismiss">
+					<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+				</button>
 			</div>
 		{/each}
 	</div>
@@ -24,7 +27,10 @@
 	}
 
 	.toast {
-		padding: 0.75rem 1.25rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.7rem 0.75rem 0.7rem 1.1rem;
 		border-radius: var(--radius);
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -33,21 +39,36 @@
 	}
 
 	.toast.success {
-		background: var(--color-badge-available);
-		color: var(--color-badge-available-text);
-		border: 1px solid var(--color-success);
+		background: var(--color-tint-avail);
+		color: var(--color-ink-avail);
 	}
 
 	.toast.error {
-		background: #f1ddd7;
-		color: var(--color-danger);
-		border: 1px solid var(--color-danger);
+		background: var(--color-tint-danger);
+		color: var(--color-ink-danger);
 	}
 
 	.toast.info {
-		background: #dbe9e9;
-		color: var(--color-accent);
-		border: 1px solid var(--color-accent);
+		background: var(--color-tint-spot);
+		color: var(--color-ink-spot);
+	}
+
+	.dismiss {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: currentColor;
+		opacity: 0.55;
+	}
+
+	.dismiss:hover {
+		opacity: 1;
+		background: rgba(0, 0, 0, 0.06);
 	}
 
 	@keyframes slide-in {
