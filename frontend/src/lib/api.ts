@@ -68,22 +68,6 @@ export const api = {
 			return request('/api/books/library-stats');
 		}
 	},
-	borrowed: {
-		list(search?: string): Promise<Book[]> {
-			const sp = new URLSearchParams();
-			if (search) sp.set('search', search);
-			const qs = sp.toString();
-			return request(`/api/borrowed${qs ? `?${qs}` : ''}`);
-		}
-	},
-	archived: {
-		list(search?: string): Promise<Book[]> {
-			const sp = new URLSearchParams();
-			if (search) sp.set('search', search);
-			const qs = sp.toString();
-			return request(`/api/archived${qs ? `?${qs}` : ''}`);
-		}
-	},
 	ocr: {
 		async extract(files: File[]): Promise<OCRResult> {
 			const form = new FormData();
